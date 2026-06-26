@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "parking-fraud-mobile",
+    "slug": "parking-fraud-mobile",
+    "version": "1.0.0",
+    "scheme": "parking-fraud",
+    "sdkVersion": "54.0.0",
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

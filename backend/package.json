@@ -1,0 +1,20 @@
+{
+  "name": "parking-fraud-backend",
+  "version": "1.0.0",
+  "description": "智能停车防刷券风控系统后端",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js"
+  },
+  "dependencies": {
+    "argon2": "^0.40.3",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "redis": "^4.6.13",
+    "sqlite3": "^5.1.7"
+  }
+}

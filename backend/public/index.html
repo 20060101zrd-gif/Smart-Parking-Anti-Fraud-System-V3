@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>智能停车风控管理大盘</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+
+    /* 简易 Toast 提示框动画 */
+
+    #toast-container { transition: opacity 0.3s ease-in-out; }
+
+    .toast-enter { opacity: 1; transform: translateY(0); }
+
+    .toast-leave { opacity: 0; transform: translateY(-20px); }
+
+  </style>
+
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen">
+
+
+
+
+  <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 opacity-0 pointer-events-none flex flex-col items-center gap-2"></div>
+
+
+
+
+  <div id="login-view" class="min-h-screen flex items-center justify-center hidden">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
+
+      <div class="text-center mb-8">
+
+        <h2 class="text-2xl font-bold text-gray-900">智能停车风控系统</h2>
+
+        <p class="text-sm text-gray-500 mt-2">B 端管理员管控平台</p>
+
+      </div>
+
+      <form id="login-form" class="space-y-6">
+
+        <div>
+
+          <label class="block text-sm font-medium text-gray-700">账号</label>
+
+          <input type="text" id="username" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="请输入管理员账号">
+
+        </div>
+
+        <div>
+
+          <label class="block text-sm font-medium text-gray-700">密码</label>
+
+          <input type="password" id="password" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="请输入密码">
+
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 font-medium transition-all">
+
+          安全登录
+
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+
+
+  <div id="dashboard-view" class="hidden min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
+        <div class="flex items-center gap-3">
+
+          <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">P</div>
+
+          <h1 class="text-xl font-bold text-gray-900">风控监控大盘</h1>
+
+        </div>
+
+        <div class="flex items-center gap-4">
+
+          <span class="text-sm text-gray-600">当前管理员: <span id="admin-name-display" class="font-medium text-gray-900">Admin</span></span>
+
+          <button id="logout-btn" class="text-sm px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors">
+
+            退出登录
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </header>
+
+
+
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
+
+      
+
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex items-center justify-between">
+
+        <div>
+
+          <h3 class="text-lg font-bold text-gray-900">快速阻断通道</h3>
+
+          <p class="text-sm text-gray-500">发现异常行为时，可手动输入手机号强制执行合规擦除与风控拉黑</p>
+
+        </div>
+
+        <div class="flex gap-2">
+
+          <input type="text" id="manual-force-phone" placeholder="输入11位手机号" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-sm w-48">
+
+          <button onclick="handleManualForceDelete()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium transition-colors shadow-sm">
+
+            强制拉黑
+
+          </button>
+
+        </div>
+
+      </div>
+
+
+
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <section class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-96">
+
+          <div class="px-5 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+
+            <h3 class="font-bold text-gray-900">风控黑名单 (90天有效)</h3>
+
+            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium" id="blacklist-count">0 条</span>
+
+          </div>
+
+          <div class="overflow-y-auto flex-1">
+
+            <table class="w-full text-left text-sm whitespace-nowrap">
+
+              <thead class="bg-white sticky top-0 shadow-sm">
+
+                <tr class="text-gray-500">
+
+                  <th class="px-5 py-3 font-medium">脱敏账号</th>
+
+                  <th class="px-5 py-3 font-medium">拦截指纹标识</th>
+
+                  <th class="px-5 py-3 font-medium text-right">操作</th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="blacklist-tbody" class="divide-y divide-gray-100">
+
+                </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+
+
+
+        <section class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-96">
+
+          <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+
+            <h3 class="font-bold text-gray-900">安全审计日志</h3>
+
+          </div>
+
+          <div class="overflow-y-auto flex-1">
+
+            <table class="w-full text-left text-sm whitespace-nowrap">
+
+              <thead class="bg-white sticky top-0 shadow-sm">
+
+                <tr class="text-gray-500">
+
+                  <th class="px-5 py-3 font-medium">操作类型</th>
+
+                  <th class="px-5 py-3 font-medium">操作对象</th>
+
+                  <th class="px-5 py-3 font-medium text-right">时间</th>
+
+                </tr>
+
+              </thead>
+
+              <tbody id="audit-tbody" class="divide-y divide-gray-100">
+
+                </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+
+
+  <script>
+
+    // --- 1. 全局工具与状态 ---
+
+    const API_BASE = '/api/v1/admin';
+
+    const DOM = {
+
+      loginView: document.getElementById('login-view'),
+
+      dashboardView: document.getElementById('dashboard-view'),
+
+      loginForm: document.getElementById('login-form'),
+
+      logoutBtn: document.getElementById('logout-btn'),
+
+      toast: document.getElementById('toast-container'),
+
+      adminName: document.getElementById('admin-name-display'),
+
+      manualPhone: document.getElementById('manual-force-phone'),
+
+      blacklistTbody: document.getElementById('blacklist-tbody'),
+
+      auditTbody: document.getElementById('audit-tbody'),
+
+      blacklistCount: document.getElementById('blacklist-count')
+
+    };
+
+
+
+
+    // 简易 Toast 提示
+
+    function showToast(message, type = 'success') {
+
+      const el = document.createElement('div');
+
+      const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+
+      el.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg font-medium text-sm transition-all duration-300`;
+
+      el.textContent = message;
+
+      DOM.toast.appendChild(el);
+
+      
+
+      requestAnimationFrame(() => {
+
+        el.classList.add('toast-enter');
+
+      });
+
+
+
+
+      setTimeout(() => {
+
+        el.classList.remove('toast-enter');
+
+        el.classList.add('toast-leave');
+
+        setTimeout(() => el.remove(), 300);
+
+      }, 3000);
+
+    }
+
+
+
+
+    // 视图切换
+
+    function switchView(viewName) {
+
+      if (viewName === 'login') {
+
+        DOM.loginView.classList.remove('hidden');
+
+        DOM.dashboardView.classList.add('hidden');
+
+      } else {
+
+        DOM.loginView.classList.add('hidden');
+
+        DOM.dashboardView.classList.remove('hidden');
+
+      }
+
+    }
+
+
+
+
+    // --- 2. 核心网络请求封装 (内置 401 拦截) ---
+
+    async function apiFetch(endpoint, options = {}) {
+
+      try {
+
+        const url = `${API_BASE}${endpoint}`;
+
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+
+        
+
+        const res = await fetch(url, { ...options, headers });
+
+        const data = await res.json();
+
+
+
+
+        // 全局捕获 401，退回登录页
+
+        if (res.status === 401) {
+
+          showToast('身份凭证无效或已过期，请重新登录', 'error');
+
+          switchView('login');
+
+          return null;
+
+        }
+
+
+
+
+        if (res.status !== 200 || data.code !== 20000) {
+
+          showToast(data.message || '系统异常', 'error');
+
+          return null;
+
+        }
+
+
+
+
+        return data.data;
+
+      } catch (err) {
+
+        showToast('网络请求失败', 'error');
+
+        return null;
+
+      }
+
+    }
+
+
+
+
+    // --- 3. 业务流转逻辑 ---
+
+
+
+
+    // 检查登录状态并加载大盘
+
+    async function loadDashboard() {
+
+      // 依赖浏览器自动携带 HttpOnly Cookie
+
+      const data = await apiFetch('/dashboard');
+
+      if (data) {
+
+        switchView('dashboard');
+
+        renderTables(data);
+
+      }
+
+    }
+
+
+
+
+    // 渲染大盘数据表格
+
+    function renderTables(data) {
+
+      // 渲染黑名单
+
+      const bl = data.blacklists || [];
+
+      DOM.blacklistCount.textContent = `${bl.length} 条`;
+
+      if (bl.length === 0) {
+
+        DOM.blacklistTbody.innerHTML = `<tr><td colspan="3" class="px-5 py-8 text-center text-gray-400">暂无拦截记录</td></tr>`;
+
+      } else {
+
+        DOM.blacklistTbody.innerHTML = bl.map(item => `
+
+          <tr class="hover:bg-gray-50 transition-colors">
+
+            <td class="px-5 py-3 text-gray-900 font-medium">${item.phone_mask}</td>
+
+            <td class="px-5 py-3 text-gray-500 font-mono text-xs truncate max-w-[150px]" title="${item.fingerprint}">${item.fingerprint.substring(0, 20)}...</td>
+
+            <td class="px-5 py-3 text-right">
+
+              <button onclick="unbanRisk('${item.fingerprint}')" class="text-blue-600 hover:text-blue-800 text-xs font-medium bg-blue-50 px-2 py-1 rounded">解封</button>
+
+            </td>
+
+          </tr>
+
+        `).join('');
+
+      }
+
+
+
+
+      // 渲染审计日志
+
+      const logs = data.auditLogs || [];
+
+      if (logs.length === 0) {
+
+        DOM.auditTbody.innerHTML = `<tr><td colspan="3" class="px-5 py-8 text-center text-gray-400">暂无操作记录</td></tr>`;
+
+      } else {
+
+        DOM.auditTbody.innerHTML = logs.map(item => {
+
+          const typeColor = item.action_type === 'FORCE_DELETE_USER' ? 'text-red-600' : 'text-gray-700';
+
+          return `
+
+            <tr class="hover:bg-gray-50 transition-colors">
+
+              <td class="px-5 py-3 ${typeColor} font-medium text-xs">${item.action_type}</td>
+
+              <td class="px-5 py-3 text-gray-500 text-xs font-mono truncate max-w-[150px]">${item.target_resource}</td>
+
+              <td class="px-5 py-3 text-right text-gray-400 text-xs">${new Date(item.created_at).toLocaleString()}</td>
+
+            </tr>
+
+          `;
+
+        }).join('');
+
+      }
+
+    }
+
+
+
+
+    // --- 4. 管控操作指令 ---
+
+
+
+
+    // 管理员登录
+
+    DOM.loginForm.addEventListener('submit', async (e) => {
+
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+
+      const password = document.getElementById('password').value;
+
+
+
+
+      const data = await apiFetch('/login', {
+
+        method: 'POST',
+
+        body: JSON.stringify({ username, password })
+
+      });
+
+
+
+
+      if (data) {
+
+        showToast('登录成功');
+
+        DOM.adminName.textContent = data.username;
+
+        loadDashboard(); // 登录成功直接加载大盘
+
+      }
+
+    });
+
+
+
+
+    // 退出登录
+
+    DOM.logoutBtn.addEventListener('click', async () => {
+
+      // 无论后端成功与否，前端均直接清空 UI 并退回登录页
+
+      await apiFetch('/auth/logout', { method: 'POST' });
+
+      switchView('login');
+
+      DOM.blacklistTbody.innerHTML = '';
+
+      DOM.auditTbody.innerHTML = '';
+
+      document.getElementById('password').value = '';
+
+      showToast('已安全退出');
+
+    });
+
+
+
+
+    // 手动强制拉黑
+
+    async function handleManualForceDelete() {
+
+      const phone = DOM.manualPhone.value;
+
+      if (!/^1[3-9]\d{9}$/.test(phone)) {
+
+        return showToast('请输入有效的11位手机号', 'error');
+
+      }
+
+      
+
+      const data = await apiFetch('/user/force-delete', {
+
+        method: 'POST',
+
+        body: JSON.stringify({ phone, reason: '管理台手动阻断' })
+
+      });
+
+
+
+
+      if (data) {
+
+        showToast('强制擦除并拉黑成功');
+
+        DOM.manualPhone.value = '';
+
+        setTimeout(loadDashboard, 1000); // 延迟 1s 刷新，等待异步日志落盘
+
+      }
+
+    }
+
+
+
+
+    // 解封指纹
+
+    async function unbanRisk(fingerprint) {
+
+      if (!confirm('确定要解除该设备的风控拦截吗？')) return;
+
+
+
+
+      const data = await apiFetch('/risk/unban', {
+
+        method: 'POST',
+
+        body: JSON.stringify({ fingerprint })
+
+      });
+
+
+
+
+      if (data) {
+
+        showToast('解封成功');
+
+        setTimeout(loadDashboard, 1000); // 延迟 1s 刷新，等待异步日志落盘
+
+      }
+
+    }
+
+
+
+
+    // --- 5. 初始化 ---
+
+    // 页面加载时自动尝试获取大盘数据，如果拥有 HttpOnly Cookie 则静默进入系统
+
+    window.addEventListener('DOMContentLoaded', loadDashboard);
+
+  </script>
+
+</body>
+
+</html>

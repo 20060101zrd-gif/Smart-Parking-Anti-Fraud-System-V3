@@ -1,0 +1,29 @@
+# 依赖目录
+node_modules/
+*/node_modules/
+
+# 环境变量与敏感配置
+.env
+.env.local
+.env.*.local
+
+# RSA 密钥对（绝对不能提交到公开仓库！）
+backend/.keys/
+*.pem
+*.key
+
+# Expo 本地缓存与开发日志
+mobile/.expo/
+mobile/.expo-shared/
+
+# 自动生成的测试报告
+tests/reports/
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器缓存
+.vscode/
+.idea/
