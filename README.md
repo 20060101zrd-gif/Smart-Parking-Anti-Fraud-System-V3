@@ -78,6 +78,9 @@
 * **风控监控大盘**
   <img src="screenshots/b-admin-dashboard.png" />
 
+* **风控规则配置**
+  <img src="screenshots/b-rules-config.png" />
+
 * **拦截日志列表**
   <img src="screenshots/b-intercept-logs.png" />
 
@@ -87,18 +90,19 @@
 * **白名单管理**
   <img src="screenshots/b-whitelist.png" />
 
-* **风控规则配置**
-  <img src="screenshots/b-rules-config.png" />
-
 ### 基础设施
 
-| Docker 容器状态 | Redis 风控黑名单 |
-| :---: | :---: |
-| <img src="screenshots/infra-docker.png" width="480" /> | <img src="screenshots/infra-redis.png" width="480" /> |
+* **Docker 容器状态**
+  <img src="screenshots/infra-docker.png" />
 
-| MySQL sys_users 表 | MySQL risk_intercept_logs 表 |
-| :---: | :---: |
-| <img src="screenshots/infra-mysql-users.png" width="480" /> | <img src="screenshots/infra-mysql-logs.png" width="480" /> |
+* **Redis 风控黑名单 Keys**
+  <img src="screenshots/infra-redis.png" />
+
+* **MySQL sys_users 表**
+  <img src="screenshots/infra-mysql-users.png" />
+
+* **MySQL risk_intercept_logs 表**
+  <img src="screenshots/infra-mysql-logs.png" />
 
 ---
 
