@@ -58,12 +58,12 @@ jobs:
         run: |
           docker compose up -d --build
           echo "⏳ 等待 backend 就绪..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 45); do
             if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
               echo "✅ Backend 启动成功"
               exit 0
             fi
-            echo "   等待... ($i/30)"
+            echo "   等待... ($i/45)"
             sleep 2
           done
           echo "❌ Backend 启动超时"

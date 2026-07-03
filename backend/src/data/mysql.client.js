@@ -28,9 +28,9 @@ class MySQLClient {
       keepAliveInitialDelay: 3000, // 3 秒后开始 TCP keepalive 探测，快速发现僵尸连接
     };
 
-    // ── 连接重试：间隔 500ms，最多 3 次 ──
+    // ── 连接重试：间隔 2000ms，最多 10 次 (20s 窗口覆盖 MySQL 初始化延迟) ──
     let lastErr;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 10; attempt++) {
       try {
         this.pool = mysql.createPool(config);
         // 验证连接可用
@@ -40,10 +40,10 @@ class MySQLClient {
         break;
       } catch (err) {
         lastErr = err;
-        console.error(`❌ [MySQL] 连接失败 (第 ${attempt}/3 次): ${err.message}`);
-        if (attempt < 3) {
-          console.log(`⏳ [MySQL] 500ms 后重试...`);
-          await this._sleep(500);
+        console.error(`❌ [MySQL] 连接失败 (第 ${attempt}/10 次): ${err.message}`);
+        if (attempt < 10) {
+          console.log(`⏳ [MySQL] 2000ms 后重试...`);
+          await this._sleep(2000);
         }
       }
     }
