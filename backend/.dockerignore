@@ -1,0 +1,4 @@
+# 裸机本地开发配置，Docker 部署时通过 docker-compose env 注入
+.env
+node_modules
+npm-debug.log

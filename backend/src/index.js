@@ -1,10 +1,11 @@
 // backend/src/index.js
 const auditQueue = require('./jobs/auditQueue');
+const interceptLogQueue = require('./jobs/interceptLogQueue');
 const express = require('express');
 const path = require('path');
 const env = require('./config/env');
 const keyManager = require('./config/keys');
-const sqliteClient = require('./data/sqlite.client');
+const mysqlClient = require('./data/mysql.client');
 const redisClient = require('./data/redis.client');
 const errorHandler = require('./middlewares/errorHandler');
 
@@ -28,12 +29,13 @@ async function bootstrap() {
     // 1. 加载或生成 RS256 密钥对
     keyManager.loadOrGenerateKeys();
 
-    // 2. 初始化 SQLite 数据库与表结构
-    await sqliteClient.init();
+    // 2. 初始化 MySQL 数据库与表结构
+    await mysqlClient.init();
 
     // 3. 连接 Redis 高速缓存 (自带降级，不阻塞主线程)
     await redisClient.connect();
     auditQueue.start();//确保高危操作日志能每2秒批量落盘
+    interceptLogQueue.start();//🆕 风控拦截日志每2秒异步刷盘
     
     // 4. 挂载前端静态资源 (Web 管理面板)
     // 映射根目录 public 文件夹，消灭跨域问题
@@ -61,3 +63,24 @@ async function bootstrap() {
 
 // 触发启动
 bootstrap();
+
+// ── 优雅关闭 ──────────────────────────────────────────────────
+const shutdown = async (signal) => {
+  console.log(`\n⚠️  收到 ${signal} 信号，正在优雅关闭...`);
+  
+  // 1. 停止定时任务（审计日志 + 拦截日志刷盘）
+  auditQueue.stop();
+  interceptLogQueue.stop();
+  
+  // 2. 关闭 MySQL 连接池（等待进行中的查询完成）
+  try { await mysqlClient.close(); } catch (e) { console.error('MySQL 关闭异常:', e.message); }
+  
+  // 3. 断开 Redis 连接
+  try { await redisClient.client.quit(); } catch (e) { console.error('Redis 关闭异常:', e.message); }
+  
+  console.log('✅ 所有资源已释放，服务安全退出');
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

@@ -1,0 +1,102 @@
+name: CI — Unit Tests + Integration + Security
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  # ────────────────────────────────────────────────────────────
+  # Job 1: 单元测试（无需 Docker，最快反馈）
+  # ────────────────────────────────────────────────────────────
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 安装后端依赖
+        run: cd backend && npm ci
+
+      - name: 运行 32 项单元测试
+        run: cd backend && npm test
+
+  # ────────────────────────────────────────────────────────────
+  # Job 2: 全链路集成 + 红蓝队安全测试（需 Docker）
+  # ────────────────────────────────────────────────────────────
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: unit
+
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 准备环境变量（.env.example → .env）
+        run: cp .env.example .env
+
+      - name: 安装测试依赖（axios / redis / autocannon）
+        run: cd tests && npm install
+
+      - name: 启动 Docker 服务（MySQL + Redis + Backend）
+        run: |
+          docker compose up -d --build
+          echo "⏳ 等待 backend 就绪..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
+              echo "✅ Backend 启动成功"
+              exit 0
+            fi
+            echo "   等待... ($i/30)"
+            sleep 2
+          done
+          echo "❌ Backend 启动超时"
+          docker logs parking-backend --tail 50
+          exit 1
+
+      - name: 🔵 Blue Team — 风控全流程验收
+        run: cd tests && node blue-team/01-risk-control.js
+
+      - name: 🔵 Blue Team — 数据层验收
+        run: cd tests && node blue-team/02-data-layer.js
+
+      - name: 🔵 Blue Team — 管理后台验收
+        run: cd tests && node blue-team/03-admin.js
+
+      - name: 🔵 Blue Team — 工程化验收
+        run: cd tests && node blue-team/04-engineering.js
+
+      - name: 🔵 Blue Team — 健康探针验收
+        run: cd tests && node blue-team/06-health-probe.js
+
+      - name: 🔴 Red Team — 风控核心渗透
+        run: cd tests && node red-team/04-risk-control.js
+
+      - name: 🔴 Red Team — 数据层攻击
+        run: cd tests && node red-team/05-data-layer.js
+
+      - name: 🔴 Red Team — 管理后台攻击
+        run: cd tests && node red-team/06-admin-attack.js
+
+      - name: 🔵 Blue Team — App 配置静态校验
+        run: cd tests && node blue-team/05-app-config.js
+
+      - name: 清理 Docker 资源
+        if: always()
+        run: docker compose down -v

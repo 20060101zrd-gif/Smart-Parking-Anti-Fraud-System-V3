@@ -3,27 +3,31 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const CryptoUtil = require('../utils/crypto');
 const keyManager = require('../config/keys');
-const sqliteClient = require('../data/sqlite.client');
+const db = require('../data/mysql.client');
 const redisClient = require('../data/redis.client');
 const env = require('../config/env');
+const logger = require('../utils/logger');
 
 class AuthService {
   /**
    * 管理员登录验证与 Token 签发
    */
   async login(username, password) {
-    const admin = await sqliteClient.get('SELECT id, password_hash, status FROM sys_admins WHERE username = ?', [username]);
+    const admin = await db.get('SELECT id, password_hash, status FROM sys_admins WHERE username = ?', [username]);
     
     if (!admin) {
+      logger.warn({ username, reason: 'user_not_found' }, '管理员登录失败');
       throw this._buildBizError(400, 40400, '账号或密码错误');
     }
     
     if (admin.status === 0) {
+      logger.warn({ username, reason: 'account_banned' }, '管理员登录失败');
       throw this._buildBizError(403, 40300, '该管理员账号已被封禁');
     }
 
     const isValid = await CryptoUtil.verifyHash(admin.password_hash, password);
     if (!isValid) {
+      logger.warn({ username, reason: 'wrong_password' }, '管理员登录失败');
       throw this._buildBizError(400, 40000, '账号或密码错误');
     }
 
@@ -38,6 +42,8 @@ class AuthService {
         jwtid: jti
       }
     );
+
+    logger.info({ adminId: admin.id, username }, '管理员登录成功');
 
     return { token, adminId: admin.id, username };
   }

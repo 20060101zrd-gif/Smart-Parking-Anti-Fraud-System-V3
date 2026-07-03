@@ -1,12 +1,42 @@
 {
   "expo": {
-    "name": "parking-fraud-mobile",
+    "name": "停小券",
     "slug": "parking-fraud-mobile",
     "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.jpg",
+    "userInterfaceStyle": "light",
     "scheme": "parking-fraud",
     "sdkVersion": "54.0.0",
+    "ios": {
+      "bundleIdentifier": "com.parkingfraud.txn",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "UIStatusBarStyle": "UIStatusBarStyleLightContent",
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "CFBundleDisplayName": "停小券",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "splash": {
+      "image": "./assets/splash.jpg",
+      "resizeMode": "contain",
+      "backgroundColor": "#EAF6FF"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
     "web": {
       "bundler": "metro"
+    },
+    "extra": {
+      "devApiHost": "192.168.16.76",
+      "eas": {
+        "projectId": "3f24a8e4-e923-4c40-8f1b-30aafc251b6b"
+      }
     }
   }
 }

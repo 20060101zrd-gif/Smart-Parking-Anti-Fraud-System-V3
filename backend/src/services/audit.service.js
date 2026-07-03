@@ -25,7 +25,7 @@ class AuditService {
       actionType,
       targetResource,
       ipAddress,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
     });
   }
 

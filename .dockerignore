@@ -1,0 +1,13 @@
+node_modules/
+.git/
+.gitignore
+*.sqlite
+database.sqlite
+tests/reports/
+screenshots/
+codemagic.yaml
+README.md
+面试导向口吻.txt
+.env
+.env.example
+.DS_Store

@@ -1,23 +1,70 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
     container_name: parking-backend
     ports:
       - "3000:3000"
-    volumes:
-      - ./backend/database.sqlite:/app/database.sqlite
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     environment:
-      - REDIS_URL=redis://redis:6379
+      - PORT=${PORT}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
     restart: always
 
   redis:
-    # 🚀 换用 DaoCloud 企业级极其稳定的源
-    image: docker.m.daocloud.io/library/redis:7-alpine
+    image: redis:7-alpine
     container_name: parking-redis
     ports:
       - "6379:6379"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
     restart: always
+
+  mysql:
+    image: mysql:8.0
+    container_name: parking-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      # 应用用户密码与 root 同密（可按需拆分独立密码）
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql:/docker-entrypoint-initdb.d:ro
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+      --max_connections=200
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: always
+
+volumes:
+  redis_data:
+    driver: local
+  mysql_data:
+    driver: local

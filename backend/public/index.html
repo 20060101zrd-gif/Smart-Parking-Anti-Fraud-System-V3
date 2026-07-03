@@ -1,644 +1,615 @@
 <!DOCTYPE html>
-
 <html lang="zh-CN">
-
 <head>
-
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>智能停车风控管理大盘</title>
-
+  <title>智能停车风控管理大盘 v3.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
-
-    /* 简易 Toast 提示框动画 */
-
-    #toast-container { transition: opacity 0.3s ease-in-out; }
-
-    .toast-enter { opacity: 1; transform: translateY(0); }
-
-    .toast-leave { opacity: 0; transform: translateY(-20px); }
-
+    #toast-container{transition:opacity .3s}
+    .nav-item{transition:all .2s}
+    .nav-item:hover{background-color:rgba(59,130,246,.08)}
+    .nav-item.active{background-color:rgba(59,130,246,.12);color:#2563eb;font-weight:600;border-left:3px solid #2563eb}
+    .page-view{display:none}
+    .page-view.active{display:block}
+    .stat-card{transition:transform .2s}
+    .stat-card:hover{transform:translateY(-2px)}
+    table{width:100%;border-collapse:collapse}
+    th{text-align:left;padding:10px 12px;font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e5e7eb}
+    td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f3f4f6}
+    tr:hover td{background:#f9fafb}
+    .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .2s}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-primary:hover{background:#1d4ed8}
+    .btn-danger{background:#ef4444;color:#fff}
+    .btn-danger:hover{background:#dc2626}
+    .btn-sm{padding:4px 10px;font-size:12px}
+    input[type=text],input[type=password],input[type=number],input[type=date],select{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box}
+    input:focus,select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
+    .modal-overlay.show{display:flex}
+    .bl-table th{font-size:12px;font-weight:600;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:12px 16px}
+    .bl-table td{padding:14px 16px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    .bl-table tr:last-child td{border-bottom:none}
+    .bl-table tr:hover td{background:#f8fafc}
   </style>
-
 </head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex">
+<div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2" style="opacity:0;pointer-events:none"></div>
 
-<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen">
+<!-- ═══ LOGIN ═══ -->
+<div id="login-view" class="w-full min-h-screen flex items-center justify-center">
+  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl font-bold text-gray-900">智能停车风控系统</h2>
+      <p class="text-sm text-gray-500 mt-2">管理员管控平台 v3.0</p>
+    </div>
+    <form id="login-form" class="space-y-6">
+      <div><label class="block text-sm font-medium text-gray-700">账号</label>
+        <input type="text" id="username" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="请输入管理员账号"></div>
+      <div><label class="block text-sm font-medium text-gray-700">密码</label>
+        <input type="password" id="password" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="请输入密码"></div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-medium transition-all">安全登录</button>
+    </form>
+  </div>
+</div>
 
+<!-- ═══ MAIN LAYOUT ═══ -->
+<div id="dashboard-view" class="hidden w-full min-h-screen flex">
+  <aside class="w-56 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col min-h-screen shadow-sm">
+    <div class="px-4 py-4 border-b border-gray-100 flex items-center gap-3">
+      <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">P</div>
+      <div><p class="font-bold text-gray-900 text-sm">风控管理平台</p><p class="text-xs text-gray-400">Parking Guard v3</p></div>
+    </div>
+    <nav class="flex-1 px-2 py-3 space-y-1" id="sidebar-nav">
+      <a onclick="switchPage('overview')" data-page="overview" class="nav-item active flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>系统概览</a>
+      <a onclick="switchPage('config')" data-page="config" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>风控规则</a>
+      <a onclick="switchPage('logs')" data-page="logs" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>拦截日志</a>
+      <a onclick="switchPage('blacklist')" data-page="blacklist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>黑名单管理</a>
+      <a onclick="switchPage('whitelist')" data-page="whitelist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>白名单管理</a>
+    </nav>
+    <div class="px-3 py-4 border-t border-gray-100">
+      <p class="text-xs text-gray-400">当前管理员</p>
+      <p class="text-sm font-medium text-gray-700" id="admin-name-display">--</p>
+      <button onclick="doLogout()" class="mt-2 w-full text-left text-xs text-red-500 hover:text-red-700">退出登录</button>
+    </div>
+  </aside>
 
-
-
-  <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 opacity-0 pointer-events-none flex flex-col items-center gap-2"></div>
-
-
-
-
-  <div id="login-view" class="min-h-screen flex items-center justify-center hidden">
-
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
-
-      <div class="text-center mb-8">
-
-        <h2 class="text-2xl font-bold text-gray-900">智能停车风控系统</h2>
-
-        <p class="text-sm text-gray-500 mt-2">B 端管理员管控平台</p>
-
+  <main class="flex-1 p-6 overflow-auto">
+    <!-- Overview Page -->
+    <div id="page-overview" class="page-view active">
+      <h1 class="text-2xl font-bold mb-6">系统概览</h1>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="overview-cards">
+        <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">今日拦截量</p>
+          <p class="text-3xl font-bold text-red-600" id="ov-today">--</p></div>
+        <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">总用户数</p>
+          <p class="text-3xl font-bold text-blue-600" id="ov-users">--</p></div>
+        <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">黑名单总数</p>
+          <p class="text-3xl font-bold text-orange-600" id="ov-bl">--</p></div>
+        <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">日均拦截</p>
+          <p class="text-3xl font-bold text-gray-700" id="ov-avg">--</p></div>
       </div>
-
-      <form id="login-form" class="space-y-6">
-
-        <div>
-
-          <label class="block text-sm font-medium text-gray-700">账号</label>
-
-          <input type="text" id="username" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="请输入管理员账号">
-
+      <div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-semibold">拦截趋势 & 注册量</h3>
+          <div class="flex gap-1 bg-gray-100 rounded-lg p-1" id="range-toggle">
+            <button class="px-3 py-1 text-xs rounded-md font-medium bg-white shadow-sm" data-range="7">7天</button>
+            <button class="px-3 py-1 text-xs rounded-md font-medium text-gray-500" data-range="30">30天</button>
+          </div>
         </div>
-
-        <div>
-
-          <label class="block text-sm font-medium text-gray-700">密码</label>
-
-          <input type="password" id="password" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="请输入密码">
-
+        <div class="flex gap-4 mb-3 text-xs text-gray-400">
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-400 rounded-sm inline-block"></span> 拦截量（左轴）</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-400 rounded-sm inline-block"></span> 注册量（右轴）</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-600 rounded-sm inline-block"></span> 异常（超均值80%）</span>
         </div>
-
-        <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 font-medium transition-all">
-
-          安全登录
-
-        </button>
-
-      </form>
-
+        <div id="trend-chart" class="relative" style="height:340px;padding:0 50px 28px 50px">
+          <div id="chart-grid" class="absolute left-[50px] right-[50px] top-0 bottom-7 flex flex-col justify-between pointer-events-none z-0"></div>
+          <div id="y-axis-left" class="absolute left-0 top-0 bottom-7 w-12 flex flex-col justify-between text-[10px] text-red-400 font-medium text-right pr-2 z-10"></div>
+          <div id="y-axis-right" class="absolute right-0 top-0 bottom-7 w-12 flex flex-col justify-between text-[10px] text-blue-400 font-medium text-left pl-2 z-10"></div>
+          <div id="chart-area" class="flex justify-around items-end h-full relative z-10"></div>
+        </div>
+        <div id="x-axis-labels" class="flex justify-around ml-[50px] mr-[50px] text-[10px] text-gray-400"></div>
+      </div>
     </div>
 
-  </div>
-
-
-
-
-  <div id="dashboard-view" class="hidden min-h-screen flex flex-col">
-
-    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-
-        <div class="flex items-center gap-3">
-
-          <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold">P</div>
-
-          <h1 class="text-xl font-bold text-gray-900">风控监控大盘</h1>
-
-        </div>
-
-        <div class="flex items-center gap-4">
-
-          <span class="text-sm text-gray-600">当前管理员: <span id="admin-name-display" class="font-medium text-gray-900">Admin</span></span>
-
-          <button id="logout-btn" class="text-sm px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 hover:text-red-600 transition-colors">
-
-            退出登录
-
-          </button>
-
-        </div>
-
+    <!-- Config Page -->
+    <div id="page-config" class="page-view">
+      <h1 class="text-2xl font-bold mb-6">风控规则配置</h1>
+      <p class="text-sm text-gray-500 mb-4">修改后实时生效，操作记录留存</p>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" id="config-table-container">
+        <table><thead><tr><th>参数标识</th><th>当前值</th><th>说明</th><th>操作</th></tr></thead><tbody id="config-tbody"></tbody></table>
       </div>
+    </div>
 
-    </header>
+    <!-- Logs Page -->
+    <div id="page-logs" class="page-view">
+      <h1 class="text-2xl font-bold mb-6">拦截日志</h1>
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3 items-center">
+        <input type="text" id="log-ip" placeholder="IP筛选" class="w-32">
+        <input type="date" id="log-start" class="w-36" lang="en"><span class="self-center text-gray-400">至</span>
+        <input type="date" id="log-end" class="w-36" lang="en">
+        <button class="btn btn-primary btn-sm" onclick="loadLogs()">查询</button>
+        <span class="text-xs text-gray-400 ml-2">|</span>
+        <button class="btn btn-danger btn-sm inline-flex items-center gap-1" onclick="clearAllLogs()">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          一键清空日志
+        </button>
+        <span class="text-xs text-gray-400 ml-2">|</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">HIGH</span><span class="text-xs text-gray-500">直接拒绝</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">MEDIUM</span><span class="text-xs text-gray-500">触发验证</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">LOW</span><span class="text-xs text-gray-500">频控限流</span>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table><thead><tr><th>ID</th><th>IP</th><th>设备哈希</th><th>拦截原因</th><th>风险等级</th><th>时间</th></tr></thead><tbody id="logs-tbody"></tbody></table>
+      </div>
+      <div class="flex items-center justify-between mt-4" id="logs-pager"><span class="text-sm text-gray-500" id="logs-info"></span>
+        <div class="flex gap-2"><button class="btn btn-sm" onclick="logsPage(-1)">上一页</button><button class="btn btn-sm" onclick="logsPage(1)">下一页</button></div></div>
+    </div>
 
-
-
-
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
-
-      
-
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex items-center justify-between">
-
+    <!-- Blacklist Page -->
+    <div id="page-blacklist" class="page-view">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-
-          <h3 class="text-lg font-bold text-gray-900">快速阻断通道</h3>
-
-          <p class="text-sm text-gray-500">发现异常行为时，可手动输入手机号强制执行合规擦除与风控拉黑</p>
-
+          <h1 class="text-2xl font-bold text-gray-900">黑名单管理</h1>
+          <p class="text-sm text-gray-500 mt-1">共 <span id="bl-total-display" class="font-semibold text-gray-700">0</span> 条记录</p>
         </div>
+        <button class="btn btn-sm inline-flex items-center justify-center gap-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50" onclick="showAddBlacklistModal()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          添加黑名单
+        </button>
+      </div>
 
-        <div class="flex gap-2">
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <div class="flex-1 flex items-center gap-2 min-w-0 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-200 transition-all">
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="bl-search" placeholder="搜索指纹 / 输入完整手机号查询并解封" class="bg-transparent border-none focus:ring-0 flex-1 min-w-0 text-sm">
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-sm inline-flex items-center gap-1 bg-white text-blue-600 border border-blue-200 hover:bg-blue-50" onclick="loadBlacklist()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              查询
+            </button>
+            <button class="btn btn-sm inline-flex items-center gap-1 bg-white text-amber-600 border border-amber-200 hover:bg-amber-50" onclick="unbanByPhone()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+              通过手机号解封
+            </button>
+            <button class="btn btn-sm inline-flex items-center gap-1 bg-white text-red-500 border border-red-200 hover:bg-red-50" onclick="unbanAll()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              一键解封所有
+            </button>
+          </div>
+        </div>
+      </div>
 
-          <input type="text" id="manual-force-phone" placeholder="输入11位手机号" class="px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500 text-sm w-48">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="bl-table"><thead><tr><th>ID</th><th>设备指纹</th><th class="col-phone-hash">手机号哈希</th><th>原因</th><th>过期时间</th><th class="text-center">操作</th></tr></thead><tbody id="bl-tbody"></tbody></table>
+      </div>
+      <div class="flex items-center justify-between mt-4" id="bl-pager"><span class="text-sm text-gray-500" id="bl-info"></span>
+        <div class="flex gap-2"><button class="btn btn-sm" onclick="blPage(-1)">上一页</button><button class="btn btn-sm" onclick="blPage(1)">下一页</button></div></div>
+    </div>
 
-          <button onclick="handleManualForceDelete()" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm font-medium transition-colors shadow-sm">
-
-            强制拉黑
-
+    <!-- Whitelist Page -->
+    <div id="page-whitelist" class="page-view">
+      <h1 class="text-2xl font-bold mb-6">白名单管理</h1>
+      <!-- 🆕 通过手机号一键加入设备白名单 -->
+      <div class="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-100 mb-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span class="text-sm text-blue-700 font-medium flex-shrink-0">通过手机号查设备：</span>
+          <input type="text" id="wl-phone" placeholder="输入 11 位手机号" class="w-48 border-blue-200 focus:border-blue-400">
+          <button class="btn btn-sm text-white" style="background:#2563eb" onclick="addWhitelistByPhone()">
+            <span class="inline-flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              查找并加入设备白名单
+            </span>
           </button>
-
+          <span id="wl-phone-result" class="text-xs text-blue-600"></span>
         </div>
-
+        <p class="text-xs text-blue-400 mt-2">系统会自动从活跃用户或注销沉淀库中查找该手机号关联的设备哈希</p>
       </div>
-
-
-
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        <section class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-96">
-
-          <div class="px-5 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-
-            <h3 class="font-bold text-gray-900">风控黑名单 (90天有效)</h3>
-
-            <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium" id="blacklist-count">0 条</span>
-
-          </div>
-
-          <div class="overflow-y-auto flex-1">
-
-            <table class="w-full text-left text-sm whitespace-nowrap">
-
-              <thead class="bg-white sticky top-0 shadow-sm">
-
-                <tr class="text-gray-500">
-
-                  <th class="px-5 py-3 font-medium">脱敏账号</th>
-
-                  <th class="px-5 py-3 font-medium">拦截指纹标识</th>
-
-                  <th class="px-5 py-3 font-medium text-right">操作</th>
-
-                </tr>
-
-              </thead>
-
-              <tbody id="blacklist-tbody" class="divide-y divide-gray-100">
-
-                </tbody>
-
-            </table>
-
-          </div>
-
-        </section>
-
-
-
-
-        <section class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-96">
-
-          <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
-
-            <h3 class="font-bold text-gray-900">安全审计日志</h3>
-
-          </div>
-
-          <div class="overflow-y-auto flex-1">
-
-            <table class="w-full text-left text-sm whitespace-nowrap">
-
-              <thead class="bg-white sticky top-0 shadow-sm">
-
-                <tr class="text-gray-500">
-
-                  <th class="px-5 py-3 font-medium">操作类型</th>
-
-                  <th class="px-5 py-3 font-medium">操作对象</th>
-
-                  <th class="px-5 py-3 font-medium text-right">时间</th>
-
-                </tr>
-
-              </thead>
-
-              <tbody id="audit-tbody" class="divide-y divide-gray-100">
-
-                </tbody>
-
-            </table>
-
-          </div>
-
-        </section>
-
+      <!-- 手动添加 -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3">
+        <select id="wl-type" class="w-28"><option value="ip">IP</option><option value="device">设备</option></select>
+        <input type="text" id="wl-value" placeholder="输入 IP 或设备哈希" class="w-64">
+        <input type="text" id="wl-remark" placeholder="备注" class="w-40">
+        <button class="btn btn-primary btn-sm" onclick="addWhitelist()">添加</button>
       </div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table><thead><tr><th>类型</th><th>值</th><th>备注</th><th>操作</th></tr></thead><tbody id="wl-tbody"></tbody></table>
+      </div>
+    </div>
+  </main>
+</div>
 
-    </main>
-
+<!-- Add Blacklist Modal -->
+<div id="add-bl-modal" class="modal-overlay">
+  <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+    <h3 class="text-lg font-bold mb-4">添加黑名单</h3>
+    <div class="space-y-3">
+      <div><label class="text-sm text-gray-600">指纹哈希</label><input type="text" id="bl-add-fp" placeholder="必填，设备/用户指纹"></div>
+      <div><label class="text-sm text-gray-600">原因</label><input type="text" id="bl-add-reason" placeholder="管理员手动添加"></div>
+    </div>
+    <div class="flex justify-end gap-3 mt-5">
+      <button class="btn btn-sm" onclick="closeAddBlModal()">取消</button>
+      <button class="btn btn-primary btn-sm" onclick="doAddBlacklist()">确认添加</button>
+    </div>
   </div>
+</div>
 
+<script>
+let currentPage='overview', logCurPage=1, blCurPage=1;
+const api=(url,opts={})=>fetch('/api/v1/admin'+url,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opts}).then(r=>r.json());
 
+function toast(msg,ok=true){
+  const el=document.getElementById('toast-container'),d=document.createElement('div');
+  d.className='px-4 py-2 rounded-lg text-sm font-medium shadow-lg '+(ok?'bg-green-600 text-white':'bg-red-600 text-white');
+  d.textContent=msg;el.appendChild(d);el.style.opacity='1';
+  setTimeout(()=>{d.remove();if(!el.children.length)el.style.opacity='0'},3000);
+}
 
+function switchPage(p){
+  document.querySelectorAll('.page-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(a=>a.classList.remove('active'));
+  document.querySelector('[data-page="'+p+'"]').classList.add('active');
+  currentPage=p;
+  if(p==='overview')loadOverview();if(p==='config')loadConfig();if(p==='logs')loadLogs();
+  if(p==='blacklist')loadBlacklist();if(p==='whitelist')loadWhitelist();
+}
 
-  <script>
+// ── Login / Logout ──
+document.getElementById('login-form').onsubmit=async e=>{e.preventDefault();
+  const r=await api('/login',{method:'POST',body:JSON.stringify({username:username.value,password:password.value})});
+  if(r.code===20000){document.getElementById('login-view').classList.add('hidden');document.getElementById('dashboard-view').classList.remove('hidden');
+    document.getElementById('admin-name-display').textContent=r.data.username;loadOverview();toast('登录成功');
+  }else{toast(r.message||'登录失败',false)}
+};
 
-    // --- 1. 全局工具与状态 ---
+async function doLogout(){
+  await api('/auth/logout',{method:'POST'});
+  document.getElementById('dashboard-view').classList.add('hidden');document.getElementById('login-view').classList.remove('hidden');
+}
 
-    const API_BASE = '/api/v1/admin';
+// ── Overview ──
+let ovRange=7;
+function fmtDate(d){const p=d.split('-');return p[1]+'-'+p[2];}
+function yLabel(max){
+  if(max<=0)return['0','0','0'];
+  const mag=Math.pow(10,Math.floor(Math.log10(max)));
+  let nice=Math.ceil(max/mag)*mag;
+  if(nice/mag>5)nice=Math.ceil(max/(mag*2))*mag*2;
+  if(max<=10)nice=max;
+  return [nice,Math.round(nice/2),0].map(String);
+}
 
-    const DOM = {
+async function loadOverview(){
+  const r=await api(`/overview?range=${ovRange}`);if(r.code!==20000)return;
+  const d=r.data;
+  document.getElementById('ov-today').textContent=d.todayIntercept||0;
+  document.getElementById('ov-users').textContent=d.totalUsers||0;
+  document.getElementById('ov-bl').textContent=d.blacklistCount||0;
+  document.getElementById('ov-avg').textContent=d.avgIntercept||0;
 
-      loginView: document.getElementById('login-view'),
+  const trend=d.trend||[], regTrend=d.registerTrend||[];
+  if(!trend.length){
+    document.getElementById('chart-area').innerHTML='<span class="text-gray-400 text-sm m-auto">暂无趋势数据</span>';
+    document.getElementById('y-axis-left').innerHTML='';
+    document.getElementById('y-axis-right').innerHTML='';
+    document.getElementById('x-axis-labels').innerHTML='';
+    return;
+  }
 
-      dashboardView: document.getElementById('dashboard-view'),
+  const maxI=Math.max(...trend.map(t=>t.cnt),0);
+  const maxR=Math.max(...regTrend.map(t=>t.cnt),0);
+  if(maxI===0 && maxR===0){
+    document.getElementById('chart-area').innerHTML='<span class="text-gray-400 text-sm m-auto">暂无趋势数据</span>';
+    document.getElementById('y-axis-left').innerHTML='';
+    document.getElementById('y-axis-right').innerHTML='';
+    document.getElementById('x-axis-labels').innerHTML='';
+    return;
+  }
 
-      loginForm: document.getElementById('login-form'),
+  const [niceI,midI]=yLabel(Math.max(maxI,1));
+  const [niceR,midR]=yLabel(Math.max(maxR,1));
+  document.getElementById('y-axis-left').innerHTML=[niceI,midI,'0'].map(v=>`<span style="color:#ef4444">${Number(v).toLocaleString()}</span>`).join('');
+  document.getElementById('y-axis-right').innerHTML=[niceR,midR,'0'].map(v=>`<span style="color:#3b82f6">${Number(v).toLocaleString()}</span>`).join('');
+  document.getElementById('chart-grid').innerHTML=[1,2,3].map(()=>'<div class="border-t border-gray-100 w-full h-0"></div>').join('');
 
-      logoutBtn: document.getElementById('logout-btn'),
+  const area=document.getElementById('chart-area');
+  area.innerHTML=trend.map((t,i)=>{
+    const hI=((t.cnt/Number(niceI))*100).toFixed(1);
+    const rv=(regTrend[i]||{}).cnt||0;
+    const hR=((rv/Number(niceR))*100).toFixed(1);
+    const anom=t.isAnomaly;
+    return`<div class="flex flex-col items-center" style="flex:1;max-width:72px;height:100%;justify-content:flex-end">
+      <div class="flex items-end justify-center gap-[3px]" style="width:100%;height:100%">
+        <div style="width:45%;height:${Math.max(0.3,hI)}%;background:${anom?'#dc2626':'#f87171'};border-radius:2px 2px 0 0;min-width:8px;cursor:pointer;transition:height .3s" title="${t.day} 拦截 ${Number(t.cnt).toLocaleString()}" onmouseenter="showTooltip(event,'${t.day}','拦截 ${Number(t.cnt).toLocaleString()}${anom?' ⚠':''}')" onmouseleave="hideTooltip()"></div>
+        <div style="width:45%;height:${Math.max(0.3,hR)}%;background:#60a5fa;border-radius:2px 2px 0 0;min-width:8px;cursor:pointer;transition:height .3s" title="${t.day} 注册 ${Number(rv).toLocaleString()}" onmouseenter="showTooltip(event,'${t.day}','注册 ${Number(rv).toLocaleString()}')" onmouseleave="hideTooltip()"></div>
+      </div>
+      ${anom?'<span class="text-[10px] leading-none mt-0.5" title="超均值80%">🔴</span>':''}
+    </div>`;
+  }).join('');
+  document.getElementById('x-axis-labels').innerHTML=trend.map(t=>`<span class="text-center" style="flex:1;max-width:72px">${fmtDate(t.day)}</span>`).join('');
 
-      toast: document.getElementById('toast-container'),
-
-      adminName: document.getElementById('admin-name-display'),
-
-      manualPhone: document.getElementById('manual-force-phone'),
-
-      blacklistTbody: document.getElementById('blacklist-tbody'),
-
-      auditTbody: document.getElementById('audit-tbody'),
-
-      blacklistCount: document.getElementById('blacklist-count')
-
+  document.querySelectorAll('#range-toggle button').forEach(btn=>{
+    btn.onclick=function(){
+      ovRange=parseInt(this.dataset.range);
+      document.querySelectorAll('#range-toggle button').forEach(b=>b.className=b===this?'px-3 py-1 text-xs rounded-md font-medium bg-white shadow-sm':'px-3 py-1 text-xs rounded-md font-medium text-gray-500');
+      loadOverview();
     };
+  });
+}
 
+// ── Config ──
+const CONFIG_LABELS={device_register_limit:'单设备注册上限',ip_register_limit:'IP每分钟注册上限',captcha_fail_max:'验证码失败触发封禁次数',ip_blocklist_ttl_hours:'IP黑名单有效期(小时)',device_blacklist_ttl_days:'设备黑名单有效期(天)',hash_archive_ttl_days:'注销沉淀库有效期(天)',captcha_answer_ttl_sec:'验证码有效期(秒)',captcha_token_ttl_sec:'验证Token有效期(秒)'};
 
+async function loadConfig(){
+  const r=await api('/config');if(r.code!==20000)return;
+  const tbody=document.getElementById('config-tbody');
+  tbody.innerHTML=Object.entries(r.data).map(([k,v])=>`<tr>
+    <td class="font-mono text-sm">${k}</td>
+    <td><input type="number" id="cfg-${k}" value="${v}" class="w-24 text-sm" min="0"></td>
+    <td class="text-sm text-gray-500">${CONFIG_LABELS[k]||k}</td>
+    <td><button class="btn btn-primary btn-sm" onclick="updateConfig('${k}')">保存</button></td></tr>`).join('');
+}
 
+async function updateConfig(key){
+  const v=document.getElementById('cfg-'+key).value;
+  const r=await api('/config',{method:'PUT',body:JSON.stringify({key,value:Number(v)})});
+  toast(r.code===20000?r.message:(r.message||'修改失败'),r.code===20000);
+}
 
-    // 简易 Toast 提示
+// ── Logs ──
+function showTooltip(e,day,text){let t=document.getElementById('bar-tooltip');if(!t){t=document.createElement('div');t.id='bar-tooltip';t.className='fixed bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-lg pointer-events-none z-50 whitespace-nowrap';document.body.appendChild(t)}t.innerHTML=`<span class="font-semibold">${day}</span><br>${text}`;t.style.left=e.clientX+12+'px';t.style.top=e.clientY-40+'px';t.style.display='block'}
+function hideTooltip(){var t=document.getElementById('bar-tooltip');if(t)t.style.display='none'}
+function fmtLogTime(dt){if(!dt)return'';return dt.slice(0,16).replace('T',' ').slice(0,16)}
 
-    function showToast(message, type = 'success') {
+function riskBadge(level){
+  const map={HIGH:'bg-red-100 text-red-700',MEDIUM:'bg-yellow-100 text-yellow-700',LOW:'bg-blue-100 text-blue-700'};
+  return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${map[level]||'bg-gray-100 text-gray-600'}">${level||'--'}</span>`;
+}
+async function loadLogs(){
+  const ip=document.getElementById('log-ip').value,start=document.getElementById('log-start').value,end=document.getElementById('log-end').value;
+  let url=`/intercept-logs?page=${logCurPage}&pageSize=15`;if(ip)url+=`&ip=${ip}`;if(start)url+=`&startDate=${start}`;if(end)url+=`&endDate=${end}`;
+  const r=await api(url);if(r.code!==20000)return;
+  document.getElementById('logs-tbody').innerHTML=(r.data.list||[]).map(l=>{
+    const dhRaw = l.device_hash || '';
+    const dhDisplay = dhRaw
+      ? `<span class="font-mono text-xs" title="${dhRaw}">${dhRaw.slice(0,16)}${dhRaw.length>16?'...':''}</span>`
+      : '<span class="text-xs text-gray-300">--</span>';
+    return `<tr>
+    <td>${l.id}</td><td class="font-mono text-xs">${l.ip_address}</td><td>${dhDisplay}</td><td>${l.intercept_reason}</td><td>${riskBadge(l.risk_level)}</td><td class="text-xs">${fmtLogTime(l.created_at)}</td></tr>`;
+  }).join('');
+  document.getElementById('logs-info').textContent=`第${r.data.page}页 / 共${r.data.total}条`;
+}
+function logsPage(d){logCurPage=Math.max(1,logCurPage+d);loadLogs();}
+async function clearAllLogs(){
+  if(!confirm('确定清空所有拦截日志吗？此操作不可撤销。'))return;
+  const r=await api('/intercept-logs/clear',{method:'POST'});
+  toast(r.message,r.code===20000);
+  if(r.code===20000)loadLogs();
+}
 
-      const el = document.createElement('div');
+// ── Blacklist ──
+async function loadBlacklist(){
+  const s=document.getElementById('bl-search').value.trim();
+  const isPhoneSearch = /^1[3-9]\d{9}$/.test(s);
+  const r=await api(`/blacklist?page=${blCurPage}&pageSize=15`+(s?`&search=${encodeURIComponent(s)}`:''));
+  if(r.code!==20000)return toast(r.message||'加载失败',false);
+  const pageSize=15, total=r.data.total||0;
+  document.getElementById('bl-total-display').textContent=total;
 
-      const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+  document.getElementById('bl-tbody').innerHTML=(r.data.list||[]).map((b,i)=>{
+    const hashDisplay = isPhoneSearch && b.phone_hash
+      ? `<span class="font-mono text-xs text-gray-700" title="${b.phone_hash}">${b.phone_hash.slice(0,16)}...</span>`
+      : (isPhoneSearch && /^1[3-9]\d{9}$/.test((b.fingerprint||'').replace(/\.\.+$/,'').trim())
+        ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">旧记录：手机号匹配</span>'
+        : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">已加密</span>');
+    const idDisplay = String(b.id||'').startsWith('redis') ? b.id.slice(0,14) : (b.id||(total - (blCurPage-1)*pageSize - i));
+    const fp = (b.fingerprint||'').replace(/\.\.+$/,'').trim();
+    const fpIsPhone = /^1[3-9]\d{9}$/.test(fp);
+    const fpDisplay = fpIsPhone
+      ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">历史记录：${fp.slice(0,3)}****${fp.slice(7)}</span>`
+      : `<span class="font-mono text-xs text-gray-700">${(fp||'--').slice(0,24)}${(fp||'').length>24?'...':''}</span>`;
+    const expiresDisplay = b.expires_at
+      ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">${fmtLogTime(b.expires_at)}</span>`
+      : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">永久</span>';
+    const blType = b.bl_type || 'unknown';
+    const unbanLabel = (blType==='device'||blType==='redis_device') ? '解封设备' : '解封此号';
+    // 🆕 解封时用 raw_fingerprint（完整值）优先于 fingerprint（可能被截断）
+    const rawFp = b.raw_fingerprint || (b.fingerprint||'').replace(/\.+$/,'').trim();
+    return `<tr>
+    <td class="text-xs text-gray-600">${idDisplay}</td>
+    <td class="text-xs">${fpDisplay}</td>
+    <td class="text-sm col-phone-hash ${isPhoneSearch?'':'hidden'}">${isPhoneSearch?'✅ 匹配 ':''}${hashDisplay}</td>
+    <td class="text-sm">${b.reason||'--'}</td>
+    <td class="text-xs">${expiresDisplay}</td>
+    <td class="text-center">
+      <button class="btn btn-danger btn-sm inline-flex items-center gap-1" data-bl-type="${blType}" data-fp="${encodeURIComponent(rawFp.replace(/'/g,''))}" data-phash="${encodeURIComponent(b.phone_hash||'')}" onclick="unbanByIdentifier(this)">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+        ${unbanLabel}
+      </button>
+    </td></tr>`;
+  }).join('');
 
-      el.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg font-medium text-sm transition-all duration-300`;
+  document.querySelectorAll('.col-phone-hash').forEach(el=>el.classList.toggle('hidden',!isPhoneSearch));
+  document.getElementById('bl-info').textContent=`第${r.data.page}页 / 共${r.data.total}条`;
+}
+function blPage(d){blCurPage=Math.max(1,blCurPage+d);loadBlacklist();}
+function showAddBlacklistModal(){document.getElementById('add-bl-modal').classList.add('show')}
+function closeAddBlModal(){document.getElementById('add-bl-modal').classList.remove('show')}
+async function doAddBlacklist(){
+  const fp=document.getElementById('bl-add-fp').value,reason=document.getElementById('bl-add-reason').value;
+  if(!fp)return toast('请填写指纹哈希',false);
+  const r=await api('/blacklist/add',{method:'POST',body:JSON.stringify({fingerprint:fp,phone_mask:'',reason})});
+  toast(r.message,r.code===20000);if(r.code===20000){closeAddBlModal();loadBlacklist();}
+}
+async function removeBlacklist(id,fp){
+  if(!confirm('确定移除该黑名单条目？'))return;
+  const r=await api('/blacklist/remove',{method:'POST',body:JSON.stringify({id,fingerprint:fp})});
+  toast(r.message,r.code===20000);if(r.code===20000)loadBlacklist();
+}
 
-      el.textContent = message;
+// ── 解封：根据 bl_type 分支处理 ──
+function unbanByIdentifier(btnEl){
+  const blType = btnEl.getAttribute('data-bl-type') || '';
+  const fingerprint = decodeURIComponent(btnEl.getAttribute('data-fp')||'').replace(/\.+$/,'').trim();
+  const phoneHash = decodeURIComponent(btnEl.getAttribute('data-phash')||'');
 
-      DOM.toast.appendChild(el);
+  // 🟢 设备黑名单：直接按指纹解封
+  if (blType === 'device' || blType === 'redis_device') {
+    if (!fingerprint) return toast('无法获取设备指纹', false);
+    return doUnbanDevice(fingerprint);
+  }
 
-      
+  // 🔴 哈希记录：优先用 phone_hash 直接解封，无需弹窗
+  if (phoneHash && phoneHash.length > 20) {
+    return doUnbanPhoneHash(phoneHash);
+  }
 
-      requestAnimationFrame(() => {
-
-        el.classList.add('toast-enter');
-
-      });
-
-
-
-
-      setTimeout(() => {
-
-        el.classList.remove('toast-enter');
-
-        el.classList.add('toast-leave');
-
-        setTimeout(() => el.remove(), 300);
-
-      }, 3000);
-
+  // 兼容旧数据（phone_hash 恰好是明文手机号）
+  const candidates = [phoneHash, fingerprint].filter(Boolean);
+  for (const c of candidates) {
+    if (/^1[3-9]\d{9}$/.test(c)) {
+      return doUnbanPhone(c);
     }
+  }
 
+  // 兜底：弹窗输入
+  const input = prompt('该条目缺少手机号哈希，请输入11位手机号进行解封');
+  if (!input || !/^1[3-9]\d{9}$/.test(input)) return toast('请输入正确的11位手机号', false);
+  doUnbanPhone(input);
+}
 
+// 设备维度解封 → 调 /risk/unban
+async function doUnbanDevice(fingerprint) {
+  if (!confirm('确定解封该设备吗？')) return;
+  const r = await api('/risk/unban', { method: 'POST', body: JSON.stringify({ fingerprint }) });
+  toast(r.message, r.code === 20000);
+  if (r.code === 20000) loadBlacklist();
+}
 
+// 手机号维度解封 → 调 /blacklist/unban-phone
+async function doUnbanPhone(phone) {
+  if (!confirm('确定解封该手机号吗？')) return;
+  const r = await api('/blacklist/unban-phone', { method: 'POST', body: JSON.stringify({ phone }) });
+  toast(r.message, r.code === 20000);
+  if (r.code === 20000) {
+    document.getElementById('bl-search').value = '';
+    loadBlacklist();
+  }
+}
 
-    // 视图切换
+// 手机号哈希维度直接解封 → 调 /blacklist/unban-hash（无需输入明文手机号）
+async function doUnbanPhoneHash(phoneHash) {
+  if (!confirm('确定解封该手机号吗？')) return;
+  const r = await api('/blacklist/unban-hash', { method: 'POST', body: JSON.stringify({ phone_hash: phoneHash }) });
+  toast(r.message, r.code === 20000);
+  if (r.code === 20000) {
+    document.getElementById('bl-search').value = '';
+    loadBlacklist();
+  }
+}
 
-    function switchView(viewName) {
+async function unbanByPhone(){
+  const phone=document.getElementById('bl-search').value.trim();
+  if(!/^1[3-9]\d{9}$/.test(phone))return toast('请输入正确的11位手机号',false);
+  doUnbanPhone(phone);
+}
 
-      if (viewName === 'login') {
+// ── 一键解封所有（智能分支：设备→按指纹，手机号哈希→按手机号） ──
+async function unbanAll(){
+  if(!confirm('确定解封当前页面所有黑名单条目吗？'))return;
+  const rows=document.querySelectorAll('#bl-tbody tr');
+  if(!rows.length)return toast('没有可解封的条目',false);
+  let ok=0, fail=0;
+  for(const row of rows){
+    const btn=row.querySelector('button[data-bl-type]');
+    if(!btn)continue;
+    const blType=btn.getAttribute('data-bl-type')||'';
+    const fingerprint=decodeURIComponent(btn.getAttribute('data-fp')||'').replace(/\.+$/,'').trim();
+    const phoneHash=decodeURIComponent(btn.getAttribute('data-phash')||'');
 
-        DOM.loginView.classList.remove('hidden');
-
-        DOM.dashboardView.classList.add('hidden');
-
-      } else {
-
-        DOM.loginView.classList.add('hidden');
-
-        DOM.dashboardView.classList.remove('hidden');
-
+    if(blType==='device'||blType==='redis_device'){
+      // 设备维度：按指纹解封
+      if(!fingerprint){fail++;continue;}
+      const r=await api('/risk/unban',{method:'POST',body:JSON.stringify({fingerprint})});
+      if(r.code===20000)ok++;else fail++;
+    }else{
+      // 哈希维度：优先用 phone_hash 直接解封
+      if(phoneHash && phoneHash.length > 20){
+        const r=await api('/blacklist/unban-hash',{method:'POST',body:JSON.stringify({phone_hash:phoneHash})});
+        if(r.code===20000)ok++;else fail++;
+      }else{
+        const candidates=[phoneHash,fingerprint].filter(Boolean);
+        let phone=null;
+        for(const c of candidates){if(/^1[3-9]\d{9}$/.test(c)){phone=c;break;}}
+        if(!phone){fail++;continue;}
+        const r=await api('/blacklist/unban-phone',{method:'POST',body:JSON.stringify({phone})});
+        if(r.code===20000)ok++;else fail++;
       }
-
     }
-
-
-
-
-    // --- 2. 核心网络请求封装 (内置 401 拦截) ---
-
-    async function apiFetch(endpoint, options = {}) {
-
-      try {
-
-        const url = `${API_BASE}${endpoint}`;
-
-        const headers = { 'Content-Type': 'application/json', ...options.headers };
-
-        
-
-        const res = await fetch(url, { ...options, headers });
-
-        const data = await res.json();
-
-
-
-
-        // 全局捕获 401，退回登录页
-
-        if (res.status === 401) {
-
-          showToast('身份凭证无效或已过期，请重新登录', 'error');
-
-          switchView('login');
-
-          return null;
-
-        }
-
-
-
-
-        if (res.status !== 200 || data.code !== 20000) {
-
-          showToast(data.message || '系统异常', 'error');
-
-          return null;
-
-        }
-
-
-
-
-        return data.data;
-
-      } catch (err) {
-
-        showToast('网络请求失败', 'error');
-
-        return null;
-
-      }
-
-    }
-
-
-
-
-    // --- 3. 业务流转逻辑 ---
-
-
-
-
-    // 检查登录状态并加载大盘
-
-    async function loadDashboard() {
-
-      // 依赖浏览器自动携带 HttpOnly Cookie
-
-      const data = await apiFetch('/dashboard');
-
-      if (data) {
-
-        switchView('dashboard');
-
-        renderTables(data);
-
-      }
-
-    }
-
-
-
-
-    // 渲染大盘数据表格
-
-    function renderTables(data) {
-
-      // 渲染黑名单
-
-      const bl = data.blacklists || [];
-
-      DOM.blacklistCount.textContent = `${bl.length} 条`;
-
-      if (bl.length === 0) {
-
-        DOM.blacklistTbody.innerHTML = `<tr><td colspan="3" class="px-5 py-8 text-center text-gray-400">暂无拦截记录</td></tr>`;
-
-      } else {
-
-        DOM.blacklistTbody.innerHTML = bl.map(item => `
-
-          <tr class="hover:bg-gray-50 transition-colors">
-
-            <td class="px-5 py-3 text-gray-900 font-medium">${item.phone_mask}</td>
-
-            <td class="px-5 py-3 text-gray-500 font-mono text-xs truncate max-w-[150px]" title="${item.fingerprint}">${item.fingerprint.substring(0, 20)}...</td>
-
-            <td class="px-5 py-3 text-right">
-
-              <button onclick="unbanRisk('${item.fingerprint}')" class="text-blue-600 hover:text-blue-800 text-xs font-medium bg-blue-50 px-2 py-1 rounded">解封</button>
-
-            </td>
-
-          </tr>
-
-        `).join('');
-
-      }
-
-
-
-
-      // 渲染审计日志
-
-      const logs = data.auditLogs || [];
-
-      if (logs.length === 0) {
-
-        DOM.auditTbody.innerHTML = `<tr><td colspan="3" class="px-5 py-8 text-center text-gray-400">暂无操作记录</td></tr>`;
-
-      } else {
-
-        DOM.auditTbody.innerHTML = logs.map(item => {
-
-          const typeColor = item.action_type === 'FORCE_DELETE_USER' ? 'text-red-600' : 'text-gray-700';
-
-          return `
-
-            <tr class="hover:bg-gray-50 transition-colors">
-
-              <td class="px-5 py-3 ${typeColor} font-medium text-xs">${item.action_type}</td>
-
-              <td class="px-5 py-3 text-gray-500 text-xs font-mono truncate max-w-[150px]">${item.target_resource}</td>
-
-              <td class="px-5 py-3 text-right text-gray-400 text-xs">${new Date(item.created_at).toLocaleString()}</td>
-
-            </tr>
-
-          `;
-
-        }).join('');
-
-      }
-
-    }
-
-
-
-
-    // --- 4. 管控操作指令 ---
-
-
-
-
-    // 管理员登录
-
-    DOM.loginForm.addEventListener('submit', async (e) => {
-
-      e.preventDefault();
-
-      const username = document.getElementById('username').value;
-
-      const password = document.getElementById('password').value;
-
-
-
-
-      const data = await apiFetch('/login', {
-
-        method: 'POST',
-
-        body: JSON.stringify({ username, password })
-
-      });
-
-
-
-
-      if (data) {
-
-        showToast('登录成功');
-
-        DOM.adminName.textContent = data.username;
-
-        loadDashboard(); // 登录成功直接加载大盘
-
-      }
-
-    });
-
-
-
-
-    // 退出登录
-
-    DOM.logoutBtn.addEventListener('click', async () => {
-
-      // 无论后端成功与否，前端均直接清空 UI 并退回登录页
-
-      await apiFetch('/auth/logout', { method: 'POST' });
-
-      switchView('login');
-
-      DOM.blacklistTbody.innerHTML = '';
-
-      DOM.auditTbody.innerHTML = '';
-
-      document.getElementById('password').value = '';
-
-      showToast('已安全退出');
-
-    });
-
-
-
-
-    // 手动强制拉黑
-
-    async function handleManualForceDelete() {
-
-      const phone = DOM.manualPhone.value;
-
-      if (!/^1[3-9]\d{9}$/.test(phone)) {
-
-        return showToast('请输入有效的11位手机号', 'error');
-
-      }
-
-      
-
-      const data = await apiFetch('/user/force-delete', {
-
-        method: 'POST',
-
-        body: JSON.stringify({ phone, reason: '管理台手动阻断' })
-
-      });
-
-
-
-
-      if (data) {
-
-        showToast('强制擦除并拉黑成功');
-
-        DOM.manualPhone.value = '';
-
-        setTimeout(loadDashboard, 1000); // 延迟 1s 刷新，等待异步日志落盘
-
-      }
-
-    }
-
-
-
-
-    // 解封指纹
-
-    async function unbanRisk(fingerprint) {
-
-      if (!confirm('确定要解除该设备的风控拦截吗？')) return;
-
-
-
-
-      const data = await apiFetch('/risk/unban', {
-
-        method: 'POST',
-
-        body: JSON.stringify({ fingerprint })
-
-      });
-
-
-
-
-      if (data) {
-
-        showToast('解封成功');
-
-        setTimeout(loadDashboard, 1000); // 延迟 1s 刷新，等待异步日志落盘
-
-      }
-
-    }
-
-
-
-
-    // --- 5. 初始化 ---
-
-    // 页面加载时自动尝试获取大盘数据，如果拥有 HttpOnly Cookie 则静默进入系统
-
-    window.addEventListener('DOMContentLoaded', loadDashboard);
-
-  </script>
-
+    await new Promise(r=>setTimeout(r,2100)); // 避免触发 adminIpLimiter（30次/60s）
+  }
+  toast(`解封完成：成功 ${ok} 条${fail?'，失败 '+fail+' 条':''}`, ok>0);
+  if(ok)loadBlacklist();
+}
+
+// ── Whitelist ──
+async function loadWhitelist(){
+  const r=await api('/whitelist');if(r.code!==20000)return;
+  const ips=(r.data.ips||[]).map(v=>({type:'IP',value:v.ip||v,remark:v.remark||''}));
+  const devs=(r.data.devices||[]).map(v=>({type:'设备',value:v.deviceHash||v,remark:v.remark||''}));
+  document.getElementById('wl-tbody').innerHTML=[...ips,...devs].map(w=>`<tr>
+    <td class="text-xs font-semibold">${w.type}</td><td class="font-mono text-xs">${w.value}</td><td>${w.remark}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="removeWhitelist('${w.type==='IP'?'ip':'device'}','${w.value}')">移除</button></td></tr>`).join('');
+}
+async function addWhitelistByPhone(){
+  const phone=document.getElementById('wl-phone').value.trim();
+  const resultEl=document.getElementById('wl-phone-result');
+  if(!/^1[3-9]\d{9}$/.test(phone)){resultEl.textContent='请输入正确的11位手机号';return toast('请输入正确的11位手机号',false);}
+  resultEl.textContent='查询中...';
+  const r=await api('/whitelist/add-by-phone',{method:'POST',body:JSON.stringify({phone,remark:'管理员通过手机号添加'})});
+  if(r.code===20000){
+    resultEl.innerHTML=`✅ ${r.message} | 设备哈希: <span class="font-mono">${r.data.display}</span>`;
+    toast(r.message);
+    document.getElementById('wl-phone').value='';
+    loadWhitelist();
+  }else{
+    resultEl.textContent='❌ '+(r.message||'操作失败');
+    toast(r.message||'操作失败',false);
+  }
+}
+async function addWhitelist(){
+  const type=document.getElementById('wl-type').value,value=document.getElementById('wl-value').value,remark=document.getElementById('wl-remark').value;
+  if(!value)return toast('请填写值',false);
+  const r=await api('/whitelist/add',{method:'POST',body:JSON.stringify({type,value,remark})});
+  toast(r.message,r.code===20000);if(r.code===20000)loadWhitelist();
+}
+async function removeWhitelist(type,value){
+  const r=await api('/whitelist/remove',{method:'POST',body:JSON.stringify({type,value})});
+  toast(r.message,r.code===20000);if(r.code===20000)loadWhitelist();
+}
+
+(async function(){
+  const r=await api('/overview');
+  if(r.code===20000){
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('dashboard-view').classList.remove('hidden');
+    document.getElementById('admin-name-display').textContent='admin';
+    loadOverview();
+  }else{document.getElementById('login-view').classList.remove('hidden');}
+})();
+</script>
 </body>
-
 </html>

@@ -1,4 +1,3 @@
-# 🚀 彻底抛弃前缀，直接使用我们刚才在本地“偷天换日”伪装好的原版镜像！
 FROM node:18-alpine
 
 WORKDIR /app

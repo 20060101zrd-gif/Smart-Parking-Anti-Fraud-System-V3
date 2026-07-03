@@ -1,14 +1,16 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import client from '../api/interceptors'
 import { storage } from '../utils/secureStore'
 import { navigate } from '../navigation/RootNavigation'
 
 export default function HomeScreen() {
-  const [userInfo, setUserInfo] = React.useState(null)
+  const [userInfo, setUserInfo] = useState(null)
 
-  // 进入页面时读取本地用户信息
-  React.useEffect(() => {
+  useEffect(() => {
     const loadUser = async () => {
       const info = await storage.getItem('user_info')
       setUserInfo(info)
@@ -16,119 +18,121 @@ export default function HomeScreen() {
     loadUser()
   }, [])
 
-  // 注销账号
-  const handleCancel = async () => {
-    Alert.alert(
-      '确认注销',
-      '注销后您的停车券将失效，且90天内无法再次领取，确定继续吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '确定注销',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await client.post('/user/cancel', { phone: userInfo.phone })
-              // 注销成功，清空本地数据
-              await storage.removeItem('user_info')
-              // 跳回注册页
-              navigate('RegisterScreen')
-              Alert.alert('提示', '账号已注销')
-            } catch (err) {
-              Alert.alert('错误', err.response?.data?.message || '注销失败')
-            }
-          }
-        }
-      ]
-    )
+  const handleLogout = async () => {
+    await storage.removeItem('user_info')
+    navigate('RegisterScreen')
+  }
+
+  const handleCancel = () => {
+    navigate('CancelScreen')
   }
 
   if (!userInfo) {
-    return <View style={styles.container}><Text>加载中...</Text></View>
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    )
   }
 
   const isExisting = userInfo.isExisting
+  const cardBg = isExisting ? '#FFFBEB' : '#F0FDF4'
+  const cardBorder = isExisting ? '#FCD34D' : '#BBF7D0'
+  const titleColor = isExisting ? '#D97706' : '#059669'
 
   return (
-    <View style={styles.container}>
-      {/* 已注册用户：浅黄色卡片 + 欢迎回来文案 */}
-      <View style={[styles.card, isExisting && styles.cardExisting]}>
-        <Text style={[styles.title, isExisting && styles.titleExisting]}>
-          {isExisting ? '👋 欢迎回来，您的停车券已领取' : '🎉 停车券已领取'}
-        </Text>
-        <Text style={styles.phone}>手机号：{userInfo.phone}</Text>
-        <Text style={[styles.status, isExisting ? styles.statusExisting : styles.statusNew]}>
-          状态：{userInfo.hasCoupon ? '正常可用' : '已失效'}
-        </Text>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
-      <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-        <Text style={styles.cancelText}>注销账号</Text>
-      </TouchableOpacity>
-    </View>
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <Text style={styles.brand}>停小券</Text>
+          <Text style={styles.brandSub}>免费停车券 · 一键领取</Text>
+        </View>
+
+        {/* ── Status Card ── */}
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+          {/* Status Icon */}
+          <View style={[styles.badge, { backgroundColor: isExisting ? '#FDE68A' : '#A7F3D0' }]}>
+            <Text style={[styles.badgeLabel, { color: titleColor }]}>
+              {isExisting ? '已有账户' : '新用户'}
+            </Text>
+          </View>
+
+          <Text style={[styles.title, { color: titleColor }]}>
+            {isExisting ? '欢迎回来' : '注册成功'}
+          </Text>
+          <Text style={[styles.subtitle, { color: isExisting ? '#F59E0B' : '#10B981' }]}>
+            {isExisting ? '您的停车券已领取' : '停车券已发放到您的账户'}
+          </Text>
+
+          <View style={styles.divider} />
+
+          <View style={styles.row}>
+            <Text style={styles.label}>手机号</Text>
+            <Text style={styles.value}>{userInfo.phone}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>停车券</Text>
+            <Text style={styles.value}>{userInfo.hasCoupon ? '正常可用' : '已失效'}</Text>
+          </View>
+        </View>
+
+        {/* ── Actions ── */}
+        <TouchableOpacity style={styles.btnOutline} onPress={handleLogout} activeOpacity={0.8}>
+          <Text style={styles.btnOutlineText}>退出登录</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.btnDanger} onPress={handleCancel} activeOpacity={0.8}>
+          <Text style={styles.btnDangerText}>注销账号</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.footer}>数据加密传输 · 隐私安全保护</Text>
+
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  // 新用户卡片（白色背景）
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginTop: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#16a34a',
-  },
-  phone: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-  },
-  status: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  statusNew: {
-    color: '#16a34a',
-  },
-  cancelBtn: {
-    marginTop: 40,
-    backgroundColor: '#ef4444',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: 15, color: '#94A3B8' },
 
-  // ===== 已注册用户：浅黄色卡片 =====
-  cardExisting: {
-    backgroundColor: '#fef3c7', // 浅黄色背景
-    borderWidth: 1,
-    borderColor: '#fcd34d',
+  header: { alignItems: 'center', marginBottom: 32 },
+  brand: { fontSize: 24, fontWeight: '700', color: '#0F172A', letterSpacing: 0.5, marginBottom: 4 },
+  brandSub: { fontSize: 13, color: '#64748B' },
+
+  card: {
+    borderRadius: 20, borderWidth: 1,
+    padding: 24, marginBottom: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
   },
-  titleExisting: {
-    color: '#d97706', // 深黄色标题
+  badge: {
+    alignSelf: 'flex-start', borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 4, marginBottom: 16,
   },
-  statusExisting: {
-    color: '#d97706', // 深黄色状态文字
+  badgeLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
+  subtitle: { fontSize: 14, fontWeight: '500', marginBottom: 24 },
+  divider: { height: 1, backgroundColor: '#E2E8F0', marginBottom: 20 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
+  label: { fontSize: 14, color: '#64748B' },
+  value: { fontSize: 14, color: '#0F172A', fontWeight: '600' },
+
+  btnOutline: {
+    borderRadius: 14, borderWidth: 1, borderColor: '#CBD5E1',
+    paddingVertical: 14, alignItems: 'center', marginBottom: 12,
   },
+  btnOutlineText: { color: '#475569', fontSize: 15, fontWeight: '600' },
+  btnDanger: {
+    borderRadius: 14, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    paddingVertical: 14, alignItems: 'center',
+  },
+  btnDangerText: { color: '#DC2626', fontSize: 15, fontWeight: '600' },
+  footer: { textAlign: 'center', marginTop: 32, fontSize: 12, color: '#94A3B8' },
 })

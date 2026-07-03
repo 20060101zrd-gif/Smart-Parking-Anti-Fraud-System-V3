@@ -1,139 +1,254 @@
-# 智能停车风控反欺诈系统 (Smart Parking Anti-Fraud System)
+# 智能停车风控反欺诈系统
 
-![Node.js](https://img.shields.io/badge/Node.js-18.x-green.svg) ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg) ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+> Smart Parking Anti-Fraud System — 全栈风控平台，覆盖 C 端领券 + B 端管控 + 红蓝对抗测试
 
-这是一个企业级的全栈风控反欺诈系统，致力于解决线下智能停车场景中“羊毛党”恶意刷取新人停车券的问题，完整覆盖 C 端用户业务闭环与 B 端管控后台。系统内建双写数据层、不可逆设备指纹、Redis 滑动窗口限流以及 RS256 非对称 JWT 鉴权等核心防线。
-
----
-
-## 一、核心商业价值
-
-1. **营销预算防损**：通过缓存状态记忆与设备指纹，有效对抗接码平台批量领券。
-2. **注销合规风控闭环**：采用 Argon2id 不可逆哈希，物理擦除 PII 的同时实现 90 天风控冷冻，彻底阻断黑产通过“注销后重新注册”来无限刷券的漏洞。
-3. **阻断慢速膨胀注入**：在核心接口前置 Redis INCR 滑动窗口限流，精准熔断慢速攻击。
-4. **内部权限保护**：采用 RS256 非对称加密签发 JWT，从根本上杜绝凭证篡改与越权。
+![Status](https://img.shields.io/badge/Test%20Suites-240/240%20Passed-brightgreen) ![Red Team](https://img.shields.io/badge/Red%20Team-100%25-red) ![Blue Team](https://img.shields.io/badge/Blue%20Team-100%25-blue) ![Jest](https://img.shields.io/badge/Unit%20Tests-32/32-green) ![Node](https://img.shields.io/badge/Node.js-18.x-green) ![Docker](https://img.shields.io/badge/Docker-Supported-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
-## 二、系统功能演示
+## 一、测试结果全景
 
-### C 端用户链路
+| 测试套件 | 用例数 | 通过率 | 评级 |
+|----------|--------|--------|------|
+| 🔴 Red Team 渗透攻击 | 26 | **100%** | 🟢 A+ (卓越) |
+| 🔵 Blue Team 功能验收 | 182 | **100%** | ✅ 全部通过 |
+| 🧪 Jest 单元测试 | 32 | **100%** | ✅ 全部通过 |
+| **合计** | **240** | **100%** | — |
 
-| 注册领券 | 领券成功 | 防重复领券 | 注销确认 | 防注销重刷拦截 |
-| :--- | :--- | :--- | :--- | :--- |
-| ![注册领券](screenshots/c-register-page.jpg) | ![领券成功](screenshots/c-register-success.jpg) | ![防重复领券](screenshots/c-coupon-active.jpg) | ![注销确认](screenshots/c-cancel-confirm.jpg) | ![防注销重刷拦截](screenshots/c-risk-blocked.jpg) |
+<details>
+<summary>📊 红队渗透测试详情</summary>
+
+| 模块 | 攻击项 | 防线守住 | 通过率 | 评级 |
+|------|--------|----------|--------|------|
+| 风控核心渗透 | 16 | 16 | 100% | A+ |
+| 数据层安全 (SQL注入/密钥绕过) | 4 | 4 | 100% | A+ |
+| 管理后台攻防 (JWT/越权) | 6 | 6 | 100% | A+ |
+| 恶意重刷压测 | 13,696 次 | 1,369 QPS / 6.8ms | ✅ | — |
+| JWT 伪造攻击 | 2 | 全部拦截 | ✅ | — |
+| 黑名单膨胀注入 | 100 | 97 被限流 (97%) | ✅ | — |
+
+</details>
+
+<details>
+<summary>📊 蓝队功能验收详情</summary>
+
+| 模块 | 用例数 | 通过 | 通过率 |
+|------|--------|------|--------|
+| 风控核心 (三级分级/IP黑名单/滑块/白名单) | 69 | 69 | 100% |
+| 数据层 (表结构/读写一致/并发/事务/加密) | 8 | 8 | 100% |
+| 管理员后台 (登录/限流/黑名单CRUD/概览) | 10 | 10 | 100% |
+| 工程化改造 (统一格式/JWT鉴权/权限拦截) | 10 | 10 | 100% |
+| App 配置校验 (app.json/eas.json/资源/依赖) | 29 | 29 | 100% |
+| 健康探针端点 (存活/就绪/MySQL降级/Redis降级) | 44 | 44 | 100% |
+| 优雅关闭验证 (SIGTERM/SIGKILL/资源释放) | 12 | 12 | 100% |
+
+</details>
+
+<details>
+<summary>🧪 单元测试详情</summary>
+
+| 套件 | 用例 | 通过 |
+|------|------|------|
+| `risk.service.test.js` | 18 | ✅ |
+| `encryption.test.js` | 14 | ✅ |
+
+</details>
+
+---
+
+## 二、系统截图
+
+### C 端用户链路 (Expo / React Native)
+
+| 注册领券 | 注册成功 | 已有账户 | 账号注销 | 风控拦截 |
+|:---:|:---:|:---:|:---:|:---:|
+| ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) | ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) |
+
+| 滑块验证 | 验证通过 |
+|:---:|:---:|
+| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-captcha-verified.jpg) |
 
 ### B 端管理后台
 
-* **安全登录页**
-  ![安全登录页](screenshots/b-admin-login.png)
-* **风控监控大盘**
-  ![风控监控大盘](screenshots/b-admin-dashboard.png)
+| 登录页 | 风控大盘 | 拦截日志 | 黑名单管理 | 白名单管理 | 风控规则配置 |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| ![](screenshots/b-admin-login.png) | ![](screenshots/b-admin-dashboard.png) | ![](screenshots/b-intercept-logs.png) | ![](screenshots/b-blacklist.png) | ![](screenshots/b-whitelist.png) | ![](screenshots/b-rules-config.png) |
+
+### 基础设施
+
+| Docker 容器 | Redis 风控黑名单 | MySQL sys_users | MySQL risk_intercept_logs |
+|:---:|:---:|:---:|:---:|
+| ![](screenshots/infra-docker.png) | ![](screenshots/infra-redis.png) | ![](screenshots/infra-mysql-users.png) | ![](screenshots/infra-mysql-logs.png) |
 
 ---
 
-## 三、技术栈
+## 三、核心风控能力
 
-| 模块 | 技术架构 |
-| :--- | :--- |
-| **C端移动端** | Expo, React Native |
-| **后端框架** | Node.js, Express.js |
-| **持久化存储** | SQLite (历史归档/操作审计) |
-| **高速缓存** | Redis (状态记忆/JWT黑名单/限流熔断) |
-| **安全算法** | Argon2id, JWT (RS256) |
-| **运维部署** | Docker, Alpine Linux |
+### 三级风险分级
+
+```
+LOW (正常)    → 直接注册，发放停车券
+MEDIUM (频控) → 触发滑块人机验证 (40101)
+HIGH (黑名单) → 直接拒绝 (40300/40301/40302)
+```
+
+- **设备指纹黑名单**：注销后 90 天冷冻，同一设备无法重新注册 (40301)
+- **IP 临时黑名单**：连续 3 次验证失败 → 自动封禁 24h (40302)
+- **手机号注销库**：SHA256 加盐哈希沉淀，换设备也无法绕过 (40300)
+- **IP 注册频控**：60s 内 ≥5 次 → 中风险人机验证
+- **注销频控**：10min 内 >4 次 → 429 熔断
+
+### 数据安全
+
+- 手机号 AES-256-CBC 加密存储 (密文格式 `iv:cipher`)
+- 设备指纹 Argon2id 不可逆哈希
+- JWT RS256 非对称签名 (防伪造/篡改)
+- SQL 注入全量拦截
+- Redis 内存降级 (宕机时不崩溃)
 
 ---
 
-## 四、核心 API 清单
+## 四、技术栈
 
-* `POST /api/v1/user/register`：C 端领券（含设备指纹比对与防刷校验）
-* `POST /api/v1/user/cancel`：C 端注销（PII 物理擦除与 90 天特征冻结）
-* `POST /api/v1/admin/login`：B 端登录（校验并签发 RS256 非对称凭证）
-* `GET /api/v1/admin/dashboard`：B 端大盘（风控黑名单与操作审计查询）
+| 层 | 技术 |
+|----|------|
+| 移动端 | Expo SDK 54, React Native |
+| 后端 | Node.js 18, Express.js |
+| 数据库 | MySQL 8.0 (InnoDB, utf8mb4) |
+| 缓存 | Redis 7 (Alpine, RDB 持久化) |
+| 安全 | Argon2id, JWT RS256, AES-256-CBC |
+| 测试 | Jest, Autocannon (压测), 红蓝对抗套件 |
+| 运维 | Docker Compose, 健康探针, 优雅关闭 |
+| CI/CD | Codemagic (iOS unsigned IPA) |
 
 ---
 
-## 五、项目目录结构
+## 五、项目结构
 
 ```text
-Smart_Parking_Anti_Fraud_System/
-├── backend/                  # 核心后端服务，内含 .keys 密钥目录、src 源码、Dockerfile
-├── mobile/                   # C 端移动端应用
-├── tests/                    # 自动化安全渗透套件，内含 src 测试脚本、reports 战报、index.js 主控入口
-├── screenshots/              # UI 演示截图
-├── docker-compose.yml        # 容器编排配置
-└── README.md                 # 项目说明
+parking-fraud-system/
+├── backend/
+│   ├── src/
+│   │   ├── controllers/    # 用户 & 管理员控制器
+│   │   ├── services/       # 风控 / 审计 / 验证码 / 白名单
+│   │   ├── middlewares/    # 限流 / JWT / 验证码Token / 黑名单
+│   │   ├── data/           # Redis 客户端 / MySQL 连接池
+│   │   ├── routes/         # API 路由 (v1)
+│   │   └── utils/          # 加密 / 日志 / 响应
+│   ├── public/             # 管理后台静态页面
+│   ├── Dockerfile
+│   └── jest.config.js
+├── mobile/
+│   ├── src/
+│   │   ├── screens/        # 注册 / 领券 / 注销
+│   │   └── components/     # 滑块验证码
+│   └── App.js
+├── tests/
+│   ├── red-team/           # 🔴 6 个渗透攻击模块 + run.js
+│   ├── blue-team/          # 🔵 7 个功能验收模块 + run.js
+│   ├── unit/               # 🧪 Jest 单元测试 + run.js
+│   ├── reports/            # 自动生成的 .md / .txt 战报
+│   └── index.js            # 一键运行全部测试
+├── screenshots/
+├── docker-compose.yml
+├── redis.conf
+└── README.md
 ```
 
 ---
 
-## 六、自动化安全渗透测试
+## 六、快速启动
 
-本项目原生内置自动化安全渗透套件，具备一键压测、越权探测与限流绕过测试能力。
-系统具备极高的并发处理性能，单节点（测试环境：4 核 8G）抗压指标达到 **6000+ QPS**。测试完成后，完整战报会自动生成在 `tests/reports/` 目录下。
+### 前置要求
 
-**安全战报示例：**
+- Docker & Docker Compose
+- Node.js 18+
+- 或：本地 MySQL 8.0 + Redis 7
 
-```text
-# 智能停车风控系统 - 安全渗透测试战报
+### 1. 克隆 & 配置
 
-- 恶意重刷: 61060 次请求, 6106.4 QPS, 1.15ms 延迟 -> 防御成功
-- JWT 伪造: 拦截非法伪造 2 次 -> 防御成功
-- 黑名单膨胀: 拦截 100 条慢速注入 (HTTP 429) -> 防御成功
-```
-
----
-
-## 七、快速启动
-
-1. **克隆项目仓库**
 ```bash
-git clone [https://github.com/YourUsername/Smart_Parking_Anti_Fraud_System.git](https://github.com/YourUsername/Smart_Parking_Anti_Fraud_System.git)
-cd Smart_Parking_Anti_Fraud_System
+git clone <repo-url>
+cd parking-fraud-system
+cp .env.example .env       # 编辑 .env 中的密码
 ```
 
-2. **环境变量配置**
-首次运行请在 `backend/` 目录下复制模板并配置文件：
-```bash
-# Linux / macOS 
-cp backend/.env.example backend/.env
+### 2. 一键启动 (Docker)
 
-# Windows (PowerShell / CMD)
-copy backend\.env.example backend\.env
-```
-
-3. **一键容器化启动（推荐）**
-启动后可访问 `http://localhost:3000` 进入管理后台：
 ```bash
 docker-compose up -d --build
+# 管理后台: http://localhost:3000
+# 管理后台单页: http://localhost:3000/index.html
 ```
 
-4. **本地非 Docker 启动（可选）**
-若不想使用 Docker，也可在本地直接启动（需提前运行 Redis）：
-```bash
-cd backend
-npm install
-node src/index.js
+### 3. 裸机开发
+
+```powershell
+# PowerShell: 覆盖 Docker 容器名 → 127.0.0.1
+$env:REDIS_HOST="127.0.0.1"; $env:MYSQL_HOST="127.0.0.1"; $env:MYSQL_PORT="3307"
+cd backend && npm install && node src/index.js
 ```
 
-5. **执行安全审计**
+### 4. 运行测试
+
 ```bash
-# 请确保在项目根目录下执行
 cd tests
-node index.js
+npm install
+node index.js                 # 一键：红队 + 蓝队
+node red-team/run.js          # 仅红队渗透
+node blue-team/run.js         # 仅蓝队验收
+node unit/run.js              # 仅 Jest 单元测试
 ```
 
----
-
-## 八、方案边界与局限性
-
-* **架构扩展**：当前为单节点容器化部署，若演进为分布式集群，需引入 Redis 分布式锁以解决跨节点的防刷并发一致性问题。
-* **风控维度**：当前核心拦截特征以手机号哈希与 IP 滑动窗口为主，暂未接入端设备底层的硬件物理指纹采集。
-* **审计日志**：管理后台的操作审计日志目前仅做 SQLite 本地持久化归档，暂未对接 ELK 等外部集中式日志监控系统。
+测试报告自动输出到 `tests/reports/`。
 
 ---
 
-## 九、开源协议
+## 七、API 清单
 
-本项目基于 **MIT License** 开源，详情请参见仓库根目录下的 [LICENSE](LICENSE) 文件。
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/v1/user/register` | C 端注册领券 (三级风险分级) |
+| `POST` | `/api/v1/user/cancel` | C 端注销 (PII 擦除 + 90 天冷冻) |
+| `POST` | `/api/v1/user/verify-captcha` | C 端滑块验证 + 注册 |
+| `GET` | `/api/v1/captcha/generate` | 获取滑块验证码 |
+| `POST` | `/api/v1/captcha/verify` | 提交滑块位置 |
+| `POST` | `/api/v1/admin/login` | B 端登录 (RS256 JWT) |
+| `GET` | `/api/v1/admin/overview` | 风控大盘数据 |
+| `GET` | `/api/v1/admin/intercept-logs` | 拦截日志分页 |
+| `GET` | `/api/v1/admin/blacklist` | 黑名单分页 |
+| `POST` | `/api/v1/admin/blacklist/add` | 添加黑名单 |
+| `POST` | `/api/v1/admin/blacklist/remove` | 移除黑名单 |
+| `GET` | `/api/v1/admin/whitelist` | 白名单查询 |
+| `POST` | `/api/v1/admin/whitelist/add` | 添加白名单 |
+| `PUT` | `/api/v1/admin/config` | 修改风控规则阈值 |
+| `GET` | `/health` | 存活探针 |
+| `GET` | `/health/ready` | 就绪探针 (MySQL+Redis 状态) |
+
+---
+
+## 八、CI/CD
+
+本项目的 Codemagic CI (`codemagic.yaml`) 自动化构建 iOS unsigned IPA，并通过 GitHub 状态检查返回结果：
+
+- **触发条件**: `main` 分支 push / PR
+- **环境**: Node 20, Xcode 16
+- **流程**: `npm install` → `expo prebuild` → `xcodebuild archive` → `.ipa`
+- **产物**: `mobile/unsigned.ipa`
+- **说明**: 已移除已废弃的全局 `expo-cli` 安装与依赖 `secrets.NOTIFY_EMAIL` 的邮件通知，避免 GitHub 触发时因环境未配置 secret 而失败。
+
+> 当前 CI 仅构建移动端，不运行测试套件。如需 CI 中跑测试，需在 CI 环境中启动 Docker Compose (MySQL + Redis + Backend)。
+
+---
+
+## 九、方案边界
+
+- **单节点部署**：当前为单节点容器化，分布式集群需引入 Redis 分布式锁
+- **设备指纹**：当前以注销冷冻为主，未接入硬件级物理指纹采集
+- **日志审计**：操作审计日志仅 MySQL 本地归档，未对接 ELK
+
+---
+
+## 十、开源协议
+
+MIT License — 详见 [LICENSE](LICENSE)

@@ -1,0 +1,59 @@
+workflows:
+  ios-unsigned-ipa:
+    name: iOS Unsigned IPA Build
+    max_build_duration: 60
+    environment:
+      node: 20.0.0
+      xcode: 16.0
+      vars:
+        EXPO_NO_DOTENV: "1"
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Install mobile dependencies
+        script: |
+          cd mobile
+          npm install
+
+      - name: Expo prebuild (generate native iOS project)
+        script: |
+          cd mobile
+          npx expo prebuild --platform ios --clean
+
+      - name: Build unsigned IPA via xcodebuild
+        script: |
+          cd mobile/ios
+
+          # Auto-detect workspace & scheme (works with any Expo project name)
+          WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -1 | xargs basename)
+          SCHEME="${WORKSPACE%.xcworkspace}"
+
+          echo "==> Detected workspace: $WORKSPACE"
+          echo "==> Detected scheme:   $SCHEME"
+
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/archive.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            archive
+
+          # Create Payload and package .ipa
+          mkdir -p build/Payload
+          cp -R build/archive.xcarchive/Products/Applications/*.app build/Payload/
+          cd build
+          zip -r ../../unsigned.ipa Payload/
+          cd ../..
+          echo "==> Done: unsigned.ipa generated at mobile/unsigned.ipa"
+
+    artifacts:
+      - mobile/unsigned.ipa

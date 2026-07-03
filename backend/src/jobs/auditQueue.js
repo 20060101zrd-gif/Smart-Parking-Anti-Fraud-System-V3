@@ -1,6 +1,6 @@
 // backend/src/jobs/auditQueue.js
 const auditService = require('../services/audit.service');
-const sqliteClient = require('../data/sqlite.client');
+const db = require('../data/mysql.client');
 
 class AuditQueueJob {
   constructor() {
@@ -27,9 +27,9 @@ class AuditQueueJob {
           params.push(log.adminId, log.actionType, log.targetResource, log.ipAddress, log.createdAt);
         });
 
-        await sqliteClient.run(sql, params);
+        await db.run(sql, params);
       } catch (err) {
-        console.error(`[AuditQueue] 批量写入 SQLite 失败，丢失 ${batch.length} 条审计记录:`, err.message);
+        console.error(`[AuditQueue] 批量写入 MySQL 失败，丢失 ${batch.length} 条审计记录:`, err.message);
         // 发生严重写入异常时，视业务容忍度可选择将 batch 重新推回队列头部
       }
     }, this.FLUSH_INTERVAL);

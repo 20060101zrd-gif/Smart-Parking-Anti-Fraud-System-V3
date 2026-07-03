@@ -1,31 +1,41 @@
 // tests/index.js
-const fs = require('fs');
+// ================================================================
+// 智能停车风控系统 — 统一测试入口
+// 一键运行红队渗透 + 蓝队验收
+//
+// 运行: cd tests && node index.js
+// 只跑红队: node red-team/run.js
+// 只跑蓝队: node blue-team/run.js
+// ================================================================
+const { execSync } = require('child_process');
 const path = require('path');
-const bruteForce = require('./src/scenarios/01-brute-force');
-const jwtForge = require('./src/scenarios/02-jwt-forge');
-const bloat = require('./src/scenarios/03-blacklist-bloat');
 
-async function main() {
-  const reports = [];
-  const scenarios = [
-    { name: '恶意重刷', fn: bruteForce },
-    { name: 'JWT 突防', fn: jwtForge },
-    { name: '黑名单膨胀', fn: bloat }
-  ];
+const suites = [
+  { name: '🔴 Red Team  — 渗透攻击模拟', file: 'red-team/run.js' },
+  { name: '🔵 Blue Team — 功能防御验收', file: 'blue-team/run.js' },
+];
 
-  for (const s of scenarios) {
-    console.log(`\n=== 开始测试: ${s.name} ===`);
-    const result = await s.fn();
-    reports.push({ name: s.name, stats: result.stats });
+console.log('\n╔══════════════════════════════════════╗');
+console.log('║  Parking Fraud System               ║');
+console.log('║  Full Test Suite (Red + Blue Team)  ║');
+console.log('╚══════════════════════════════════════╝\n');
+
+let exitCode = 0;
+
+for (const s of suites) {
+  console.log(`\n${'='.repeat(50)}`);
+  console.log(`${s.name}`);
+  console.log(`${'='.repeat(50)}\n`);
+  try {
+    execSync(`node "${path.join(__dirname, s.file)}"`, { stdio: 'inherit' });
+  } catch (e) {
+    console.error(`\n❌ ${s.name} — 执行失败 (exit code: ${e.status})`);
+    exitCode = 1;
   }
-
-  // 生成报告
-  const reportContent = `风控系统攻防报告 ${new Date().toLocaleString()}\n` + 
-    JSON.stringify(reports, null, 2);
-  
-  const reportPath = path.join(__dirname, `reports/report-${Date.now()}.txt`);
-  fs.writeFileSync(reportPath, reportContent);
-  console.log(`\n🎉 所有测试完成，报告已生成: ${reportPath}`);
 }
 
-main();
+console.log(`\n${'='.repeat(50)}`);
+console.log(exitCode === 0 ? '🎉 全部测试套件执行完毕！' : '⚠️  部分测试套件执行失败，请查看上方日志');
+console.log(`${'='.repeat(50)}\n`);
+
+process.exit(exitCode);
