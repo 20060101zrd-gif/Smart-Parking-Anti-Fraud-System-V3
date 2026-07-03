@@ -74,21 +74,21 @@
 
 | 登录页 | 风控大盘 | 拦截日志 |
 | :---: | :---: | :---: |
-| ![](screenshots/b-admin-login.png) | ![](screenshots/b-admin-dashboard.png) | ![](screenshots/b-intercept-logs.png) |
+| <img src="screenshots/b-admin-login.png" width="320" /> | <img src="screenshots/b-admin-dashboard.png" width="320" /> | <img src="screenshots/b-intercept-logs.png" width="320" /> |
 
 | 黑名单管理 | 白名单管理 | 风控规则配置 |
 | :---: | :---: | :---: |
-| ![](screenshots/b-blacklist.png) | ![](screenshots/b-whitelist.png) | ![](screenshots/b-rules-config.png) |
+| <img src="screenshots/b-blacklist.png" width="320" /> | <img src="screenshots/b-whitelist.png" width="320" /> | <img src="screenshots/b-rules-config.png" width="320" /> |
 
 ### 基础设施
 
 | Docker 容器状态 | Redis 风控黑名单 |
 | :---: | :---: |
-| ![](screenshots/infra-docker.png) | ![](screenshots/infra-redis.png) |
+| <img src="screenshots/infra-docker.png" width="480" /> | <img src="screenshots/infra-redis.png" width="480" /> |
 
 | MySQL sys_users 表 | MySQL risk_intercept_logs 表 |
 | :---: | :---: |
-| ![](screenshots/infra-mysql-users.png) | ![](screenshots/infra-mysql-logs.png) |
+| <img src="screenshots/infra-mysql-users.png" width="480" /> | <img src="screenshots/infra-mysql-logs.png" width="480" /> |
 
 ---
 
@@ -186,8 +186,8 @@ parking-fraud-system/
 | `GET` | `/api/v1/admin/whitelist` | 白名单查询 |
 | `POST` | `/api/v1/admin/whitelist/add` | 添加白名单 |
 | `PUT` | `/api/v1/admin/config` | 修改风控规则阈值 |
-| `GET` | `/health` | 存活探针 |
-| `GET` | `/health/ready` | 就绪探针 (MySQL+Redis 状态) |
+| `GET` | `/api/v1/health` | 存活探针 |
+| `GET` | `/api/v1/health/ready` | 就绪探针 (MySQL+Redis 状态) |
 
 ---
 

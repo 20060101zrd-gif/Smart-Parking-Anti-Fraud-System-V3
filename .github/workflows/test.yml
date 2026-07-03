@@ -59,7 +59,7 @@ jobs:
           docker compose up -d --build
           echo "⏳ 等待 backend 就绪..."
           for i in $(seq 1 45); do
-            if curl -sf http://localhost:3000/health > /dev/null 2>&1; then
+            if curl -sf http://localhost:3000/api/v1/health > /dev/null 2>&1; then
               echo "✅ Backend 启动成功"
               exit 0
             fi
