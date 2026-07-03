@@ -72,13 +72,23 @@
 
 ### B 端管理后台
 
-| 登录页 | 风控大盘 | 拦截日志 |
-| :---: | :---: | :---: |
-| <img src="screenshots/b-admin-login.png" width="320" /> | <img src="screenshots/b-admin-dashboard.png" width="320" /> | <img src="screenshots/b-intercept-logs.png" width="320" /> |
+* **安全登录页**
+  <img src="screenshots/b-admin-login.png" />
 
-| 黑名单管理 | 白名单管理 | 风控规则配置 |
-| :---: | :---: | :---: |
-| <img src="screenshots/b-blacklist.png" width="320" /> | <img src="screenshots/b-whitelist.png" width="320" /> | <img src="screenshots/b-rules-config.png" width="320" /> |
+* **风控监控大盘**
+  <img src="screenshots/b-admin-dashboard.png" />
+
+* **拦截日志列表**
+  <img src="screenshots/b-intercept-logs.png" />
+
+* **黑名单管理**
+  <img src="screenshots/b-blacklist.png" />
+
+* **白名单管理**
+  <img src="screenshots/b-whitelist.png" />
+
+* **风控规则配置**
+  <img src="screenshots/b-rules-config.png" />
 
 ### 基础设施
 

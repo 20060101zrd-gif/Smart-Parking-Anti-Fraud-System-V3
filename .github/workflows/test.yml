@@ -94,6 +94,9 @@ jobs:
       - name: 🔴 Red Team — 管理后台攻击
         run: cd tests && node red-team/06-admin-attack.js
 
+      - name: Install mobile dependencies
+        run: cd mobile && npm install
+
       - name: 🔵 Blue Team — App 配置静态校验
         run: cd tests && node blue-team/05-app-config.js
 
