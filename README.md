@@ -90,53 +90,53 @@
 
 **安全登录** -- Argon2id 密码校验 + RS256 JWT
 
-<img src="screenshots/b-admin-login.png" width="600" />
+![](screenshots/b-admin-login.png)
 
 **风控监控大盘** -- 实时拦截趋势、用户统计、黑名单数
 
-<img src="screenshots/b-admin-dashboard.png" width="600" />
+![](screenshots/b-admin-dashboard.png)
 
 **拦截日志** -- 每条拦截的 IP、设备哈希、原因、风险等级
 
-<img src="screenshots/b-intercept-logs.png" width="600" />
+![](screenshots/b-intercept-logs.png)
 
 **黑名单管理** -- 支持手机号搜索、手动添加、解封
 
-<img src="screenshots/b-blacklist.png" width="600" />
+![](screenshots/b-blacklist.png)
 
 **白名单管理** -- 免检 VIP 通道
 
-<img src="screenshots/b-whitelist.png" width="600" />
+![](screenshots/b-whitelist.png)
 
 **规则配置** -- 在线调整限流阈值、黑名单天数
 
-<img src="screenshots/b-rules-config.png" width="600" />
+![](screenshots/b-rules-config.png)
 
 **用户管理（脱敏）** -- 手机号 AES 解密后脱敏显示，操作列「显示」按钮
 
-<img src="screenshots/b-users-list.png" width="600" />
+![](screenshots/b-users-list.png)
 
 **用户管理（明文）** -- 点击后显示绿色完整明文，按钮切换为「隐藏」
 
-<img src="screenshots/b-users-revealed.png" width="600" />
+![](screenshots/b-users-revealed.png)
 
 ### 基础设施
 
-**Docker 容器**
+**Docker 容器** -- 三个服务（backend / redis / mysql）全部运行中
 
-<img src="screenshots/infra-docker.png" width="600" />
+![](screenshots/infra-docker.png)
 
-**Redis 黑名单 Key**
+**Redis 黑名单 Key** -- 缓存中的风控黑名单
 
-<img src="screenshots/infra-redis.png" width="600" />
+![](screenshots/infra-redis.png)
 
-**MySQL 用户表（密文）**
+**MySQL 用户表（密文）** -- `phone` 列为 AES-256-CBC 密文，非明文
 
-<img src="screenshots/infra-mysql-users.png" width="600" />
+![](screenshots/infra-mysql-users.png)
 
-**MySQL 拦截日志**
+**MySQL 拦截日志** -- 拦截原因、风险等级、时间戳
 
-<img src="screenshots/infra-mysql-logs.png" width="600" />
+![](screenshots/infra-mysql-logs.png)
 
 ---
 
@@ -144,7 +144,7 @@
 
 ### 手机号：双层存储
 
-同一个手机号产生两份数据，各司其职：
+停车用户注册时，手机号产生两份数据，各司其职：
 
 ```
 13812345678
@@ -152,95 +152,83 @@
    +--> sys_users.phone (AES-256-CBC 加密)
    |    格式: iv:cipher
    |    可逆: 是，需 ENCRYPT_KEY 解密
-   |    用途: 管理员查看用户详情
+   |    用途: 管理员后台查看用户详情
    |
    +--> sys_users.phone_hash (SHA256 加盐哈希)
         格式: 64 位 hex
         可逆: 否，单向不可逆
-        用途: 黑名单匹配、查重
+        用途: 注册时查重、注销后黑名单匹配
 ```
 
 **为什么两份？**
 
-- 查黑名单只需要「是或否」，SHA256 比对比逐条解密快几个数量级
-- 哈希操作不触碰解密密钥，遵循最小化敏感信息暴露原则
+注销后的手机号被加入黑名单（`pf:risk:hash_bl:{phoneHash}`），下次注册时系统需要快速判断「这个号在黑名单里吗」。用 SHA256 哈希比对，比逐条 AES 解密快几个数量级，且不触碰解密密钥 -- 遵循最小化敏感信息暴露原则。密钥存在 `.env` 的 `ENCRYPT_KEY` 中，不进入代码仓库。
 
-**加密细节**
+### 管理员后台：手机号展示与审计
 
-- AES-256-CBC，密钥来自 `.env` 的 `ENCRYPT_KEY` 经 SHA256 派生为 32 字节
-- 每次加密随机生成 16 字节 IV，格式 `iv:cipher`，自包含
-- 随机 IV 确保相同手机号每次加密结果不同，阻断频率分析
-
-### 用户管理：手机号显示与隐藏
-
-管理员后台默认显示脱敏手机号（`138****5678`）。
-
-- 每行「显示」按钮：调用 `/users/phone/:id` 获取明文
-- 工具栏「显示全部明文」：批量解密当前页
-- 每次解密操作写入审计日志，全程可追溯
-- 明文显示后按钮变为「隐藏」，可一键切换回脱敏
+管理员打开用户管理页面，所有手机号默认脱敏（`138****5678`）。只有点击「显示」按钮或「显示全部明文」时，后端才调用 AES 解密接口返回明文，操作同步写入 `sys_audit_logs`。明文显示后可一键切回脱敏。整个流程确保明文不会默认暴露在任何页面或日志中。
 
 ### 管理员密码：Argon2id
 
-密码不存明文，用 Argon2id（2015 年密码哈希竞赛冠军）保存。
-
-参数 `memoryCost=16MB, timeCost=2`：正常登录 50-100ms 无感，GPU 暴力破解每秒仅十几次。
+管理后台的登录密码用 Argon2id 保存。参数 `memoryCost=16MB, timeCost=2`：正常登录 50-100ms 无感，但如果攻击者拿到数据库后尝试 GPU 暴力破解，每秒只能试十几次。
 
 ### 登录凭证：RS256 JWT
 
-登录后 JWT 存 HttpOnly Cookie，前端 JS 不可读。
+管理员登录后，后端签发 RS256 JWT 存入 HttpOnly Cookie。后台所有操作（查看黑名单、调整规则、解密手机号）都经过 JWT 校验。
 
-选择 RS256（非对称）的理由：
+选择 RS256 是因为：
+- 私钥仅后端持有，即使 `.env` 泄露公钥也无法伪造 token
+- `algorithms: ['RS256']` 显式限制，防止攻击者发 `alg: none` 绕过签名
 
-- 私钥仅签发服务持有，暴露面最小
-- 公钥可安全分发验证，泄露不影响安全
-- `algorithms: ['RS256']` 防止 `alg: none` 降级攻击
-
-Cookie 加固：`httpOnly` 防 XSS，`sameSite: strict` 防 CSRF。
+Cookie 加固：`httpOnly` 防 XSS 窃取，`sameSite: strict` 防 CSRF，JTI 写入 Redis 吊销黑名单支持主动踢出。
 
 ---
 
 ## 技术选型
 
-### Node.js + Express（后端框架）
+### Node.js + Express（后端）
 
-**解决什么问题**：JavaScript 全栈，移动端 React Native 和后端用同一种语言，一个人能搞定前后端。Express 的中间件是洋葱圈模型，可以像搭积木一样把限流、鉴权、校验串起来 -- 本项目用到的四层中间件链就是最直接的例子：
+本项目核心是一条四层风控中间件链，每次注册请求依次经过 IP 黑名单、注册频控、全局防刷、手机号限流，任一命中即拦截。Express 的洋葱圈模型天然适合这种「层层过滤」的架构：
 
 ```javascript
 router.post('/register',
-  ipBlacklist,      // 第一层：检查 IP 是否在 24h 封禁中
-  regIpLimiter,     // 第二层：60s 内超 5 次触发验证码
-  globalIpLimiter,  // 第三层：全局 10 次/秒防刷
-  phoneLimiter,     // 第四层：单手机号 1 次/5 秒
+  ipBlacklist,      // 第一层：IP 是否在 24h 封禁中
+  regIpLimiter,     // 第二层：60s 内同 IP 超 5 次触发验证码
+  globalIpLimiter,  // 第三层：全局 10 次/秒兜底
+  phoneLimiter,     // 第四层：单手机号 5 秒内仅允许 1 次
   userController.register
 );
 ```
 
-风控系统是 IO 密集型（大量的 Redis/MySQL 网络请求），Node.js 的事件循环 + 非阻塞 IO 天然适合。
+风控系统是 IO 密集型 -- 每次注册要读写 Redis（查黑名单、计数）和 MySQL（入库）。Node.js 的非阻塞 IO 在大量并发注册时不会因等待网络而阻塞后续请求，与 Go/Java 的多线程模型相比，在这种场景下代码量和心智负担更小。
 
-### MySQL 8.0（持久化存储）
+### MySQL 8.0（持久化）
 
-**解决什么问题**：风控系统的核心数据（用户、黑名单、拦截日志、审计记录）天然是结构化关系数据。InnoDB 引擎的行级锁和 MVCC 保证高并发注册下读写不互斥。参数化查询（`?` 占位符）天然防 SQL 注入。
+本系统 11 张表全部围绕停车反欺诈业务：`sys_users` 存注册用户，`sys_blacklist` + `risk_hash_archives` + `phone_blacklist_map` 三层黑名单沉淀，`risk_intercept_logs` 记录每次拦截，`sys_audit_logs` 追踪管理员操作。
 
-注销操作涉及 5 步（删除用户、写黑名单、写归档、写设备黑名单、同步 Redis），MySQL 的事务（`BEGIN/COMMIT`）保证要么全做要么全不做。
+一个关键的场景是注销：用户注销后，系统需要同时删除用户记录、写入设备黑名单、写入手机号哈希归档、写入映射表、同步 Redis。MySQL 的 `BEGIN/COMMIT` 事务保证这 5 步要么全做要么全不做，避免出现「用户已删但黑名单没写」的半成品状态。
 
-### Redis 7（缓存与限流引擎）
+参数化查询（`pool.query(sql, [phoneHash])`）防范 SQL 注入，红队测试中 4 项 SQL 注入攻击全部被拦截。
 
-**解决什么问题**：限流计数器必须极快响应，而且必须是**原子操作**。Redis 的 `INCR` 命令是单线程原子执行的，两个请求同时来不会出现「都读到旧值 3，都 +1 写成 4」的竞态问题。
+### Redis 7（缓存与限流）
 
-Redis `EXPIRE` 天然支持滑动窗口的时间重置 -- 第一个请求设 60 秒 TTL，窗口内的请求共享这个倒计时，窗口结束自动清零，不需要额外的定时清理任务。
+Redis 在本系统中承担两个核心角色：
 
-**Redis 宕机也不会崩**：限流自动切到内存 Map + setTimeout，黑名单切到内存 Set，验证码答案切到内存缓存。每个模块都有 `if (!redisClient.isReady)` 的降级路径。
+**限流计数**：`pf:limit:reg_ip:{ip}` 是注册频控的计数器。`INCR` 命令单线程原子执行 -- 两个并发请求同时到达时，不会出现「都读到 3，都认为自己是第 4 次」的竞态。第一个请求设 60 秒 TTL，窗口结束自动归零。
+
+**黑名单高速命中**：设备黑名单以 `pf:risk:device_bl:{deviceId}` 存储，手机号注销库以 `pf:risk:hash_bl:{phoneHash}` 存储，TTL 均为 90 天。注册时亚毫秒级命中直接返回 403，无需查询 MySQL。
+
+Redis 不可用时，限流切内存 Map + setTimeout，黑名单切内存 Set，验证码答案切内存缓存 -- 系统不会因缓存故障而拒绝服务。
 
 ### React Native + Expo（移动端）
 
-**解决什么问题**：一套代码同时跑 iOS 和 Android。作为个人全栈项目，精力应该花在风控逻辑上而不是原生适配。Expo 把 Xcode/Android Studio 的原生配置细节封装掉，开发聚焦在业务页面。
+C 端用户通过 App 完成注册、滑块验证、领券、注销的完整闭环。React Native 一套代码同时覆盖停车场用户的 iOS 和 Android 设备，Expo 屏蔽了 Xcode/Android Studio 的原生配置，开发聚焦在业务链路：注册表单校验、滑块拼图交互、风控拦截提示（40301/40300/40302 错误码对应的 UI 反馈）。
 
 ### Docker Compose（部署）
 
-**解决什么问题**：三个服务（后端、MySQL、Redis）有启动依赖 -- MySQL 必须先完全就绪后后端才能启动。Docker Compose 的 `depends_on` + `condition: service_healthy` 保证正确顺序。命名卷（`redis_data`、`mysql_data`）保证容器重启后数据不丢。
+三个容器（backend / redis / mysql）通过 `docker-compose.yml` 编排。MySQL 配置了 `healthcheck`（每 10 秒 `mysqladmin ping`），backend 的 `depends_on` 等待 MySQL healthy 后才启动，避免后端启动时连不上数据库报错。
 
-内置健康探针：`/health`（存活探针，返回 200 表示进程在线）、`/health/ready`（就绪探针，TCP 直连检测 MySQL + Redis，3 秒超时）。从宕机恢复时自动预热连接池。
+命名卷 `redis_data` 和 `mysql_data` 保证容器重启后拦截日志和黑名单数据不丢失。`/health/ready` 就绪探针用原生 TCP 直连检测 MySQL + Redis，3 秒超时，从宕机恢复时自动预热连接池。
 
 ---
 
