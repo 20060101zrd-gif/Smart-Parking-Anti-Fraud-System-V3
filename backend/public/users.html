@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>用户管理 — 停车风控系统</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+    }
+
+    /* 顶部导航 */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h2 { font-size: 18px; font-weight: 600; }
+    .header .nav-links { display: flex; gap: 20px; }
+    .header .nav-links a {
+      color: #8892b0; text-decoration: none; font-size: 13px;
+      transition: color 0.2s;
+    }
+    .header .nav-links a:hover { color: #64ffda; }
+    .header .nav-links a.active { color: #64ffda; font-weight: 600; }
+
+    .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+
+    /* 提示条 */
+    .info-bar {
+      background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px;
+      padding: 12px 20px; margin-bottom: 20px; font-size: 13px; color: #0050b3;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .info-bar .icon { font-size: 18px; }
+
+    /* 搜索栏 */
+    .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
+    .search-bar input {
+      flex: 1; padding: 10px 16px; border: 1px solid #d9d9d9;
+      border-radius: 8px; font-size: 14px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-bar input:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.1); }
+    .search-bar button {
+      padding: 10px 20px; background: #1890ff; color: #fff;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 14px;
+      transition: background 0.2s;
+    }
+    .search-bar button:hover { background: #096dd9; }
+    .search-bar .refresh-btn {
+      background: #fff; color: #595959; border: 1px solid #d9d9d9;
+    }
+    .search-bar .refresh-btn:hover { color: #1890ff; border-color: #1890ff; background: #fff; }
+    .search-bar .hint { font-size: 12px; color: #999; align-self: center; white-space: nowrap; }
+
+    /* 表格 */
+    .table-wrap {
+      background: #fff; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+    th {
+      background: #fafafa; font-weight: 600; color: #262626;
+      font-size: 13px; white-space: nowrap;
+    }
+    td { font-size: 14px; color: #595959; }
+    tr:hover td { background: #fafafa; }
+    td code {
+      background: #f5f5f5; padding: 2px 6px; border-radius: 4px;
+      font-size: 12px; font-family: "SF Mono", "Fira Code", monospace;
+    }
+
+    /* 状态标签 */
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 10px;
+      font-size: 12px; font-weight: 500;
+    }
+    .badge-ok  { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+    .badge-off { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+
+    /* 分页 */
+    .pagination {
+      display: flex; justify-content: center; align-items: center;
+      gap: 6px; margin-top: 20px; flex-wrap: wrap;
+    }
+    .pagination button {
+      padding: 8px 14px; border: 1px solid #d9d9d9; background: #fff;
+      border-radius: 6px; cursor: pointer; font-size: 13px; color: #595959;
+      transition: all 0.15s;
+    }
+    .pagination button:hover:not(:disabled) { color: #1890ff; border-color: #1890ff; }
+    .pagination button.active {
+      background: #1890ff; color: #fff; border-color: #1890ff; font-weight: 600;
+    }
+    .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+    .pagination .info { line-height: 36px; color: #8c8c8c; font-size: 13px; margin: 0 10px; }
+
+    /* 空态 / 加载 */
+    .empty, .loading, .error {
+      text-align: center; padding: 64px 20px; color: #bfbfbf; font-size: 15px;
+    }
+    .error { color: #ff4d4f; }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .container { padding: 0 12px; }
+      .search-bar { flex-wrap: wrap; }
+      .search-bar .hint { width: 100%; }
+      th:nth-child(4), td:nth-child(4),
+      th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h2>👥 用户管理</h2>
+  <div class="nav-links">
+    <a href="/">首页</a>
+    <a href="/index.html">风控大盘</a>
+    <a href="/users.html" class="active">用户管理</a>
+    <a href="#" onclick="handleLogout()">退出登录</a>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 信息提示 -->
+  <div class="info-bar">
+    <span class="icon">🔒</span>
+    手机号已脱敏显示（中间四位隐藏为 ****），仅支持按手机号精确搜索（自动哈希匹配）
+  </div>
+
+  <!-- 搜索栏 -->
+  <div class="search-bar">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="输入手机号（如 13812345678）精确搜索，或输入姓名模糊搜索..."
+      autocomplete="off"
+    />
+    <button onclick="doSearch()">🔍 搜索</button>
+    <button class="refresh-btn" onclick="doRefresh()">🔄 刷新</button>
+    <span class="hint">💡 手机号自动转为 SHA256 哈希后匹配</span>
+  </div>
+
+  <!-- 表格 -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>姓名</th>
+          <th>手机号</th>
+          <th>手机号哈希（前16位）</th>
+          <th>设备哈希（前16位）</th>
+          <th>状态</th>
+          <th>注册时间</th>
+        </tr>
+      </thead>
+      <tbody id="userTbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 分页 -->
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<script>
+  let currentPage = 1;
+  const pageSize = 20;
+
+  // 初始加载
+  loadUsers(1);
+
+  async function loadUsers(page = 1, search = '') {
+    currentPage = page;
+    const tbody = document.getElementById('userTbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">⏳ 加载中...</td></tr>';
+
+    try {
+      const params = new URLSearchParams({ page, pageSize });
+      if (search) params.set('search', search);
+
+      const resp = await fetch(`/api/v1/admin/users?${params}`, {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
+      });
+
+      // 未登录 → 跳回登录页
+      if (resp.status === 401 || resp.status === 403) {
+        tbody.innerHTML = '<tr><td colspan="7" class="error">⚠️ 登录已过期或无权限，请重新登录</td></tr>';
+        setTimeout(() => { window.location.href = '/index.html'; }, 2000);
+        return;
+      }
+
+      const data = await resp.json();
+
+      if (data.code !== 20000) {
+        tbody.innerHTML = `<tr><td colspan="7" class="error">❌ ${data.message}</td></tr>`;
+        renderPagination({ total: 0, page: 1, pageSize });
+        return;
+      }
+
+      const { list, total } = data.data;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">📭 没有找到匹配的用户</td></tr>';
+        renderPagination({ total: 0, page: 1, pageSize });
+        return;
+      }
+
+      tbody.innerHTML = list.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${escapeHtml(u.name || '-')}</td>
+          <td><code>${escapeHtml(u.phone)}</code></td>
+          <td><code style="font-size:12px">${escapeHtml(u.phoneHash || '')}</code></td>
+          <td><code style="font-size:12px">${escapeHtml(u.deviceHash || '')}</code></td>
+          <td><span class="badge ${u.status === '正常' ? 'badge-ok' : 'badge-off'}">${u.status}</span></td>
+          <td style="font-size:12px;white-space:nowrap">${u.registeredAt || '-'}</td>
+        </tr>
+      `).join('');
+
+      renderPagination({ total, page, pageSize });
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7" class="error">❌ 网络请求失败：${err.message}</td></tr>`;
+    }
+  }
+
+  function renderPagination({ total, page, pageSize }) {
+    const totalPages = Math.ceil(total / pageSize) || 1;
+    const pagDiv = document.getElementById('pagination');
+
+    let html = '';
+    html += `<button ${page <= 1 ? 'disabled' : ''} onclick="goPage(${page - 1})">◀ 上一页</button>`;
+
+    const start = Math.max(1, page - 3);
+    const end = Math.min(totalPages, page + 3);
+
+    if (start > 1) {
+      html += `<button onclick="goPage(1)">1</button>`;
+      if (start > 2) html += `<span style="padding:0 4px;color:#ccc">…</span>`;
+    }
+
+    for (let i = start; i <= end; i++) {
+      html += `<button class="${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    }
+
+    if (end < totalPages) {
+      if (end < totalPages - 1) html += `<span style="padding:0 4px;color:#ccc">…</span>`;
+      html += `<button onclick="goPage(${totalPages})">${totalPages}</button>`;
+    }
+
+    html += `<button ${page >= totalPages ? 'disabled' : ''} onclick="goPage(${page + 1})">下一页 ▶</button>`;
+    html += `<span class="info">共 ${total} 条 / ${totalPages} 页</span>`;
+
+    pagDiv.innerHTML = html;
+  }
+
+  function doSearch() {
+    const val = document.getElementById('searchInput').value.trim();
+    loadUsers(1, val);
+  }
+
+  function doRefresh() {
+    document.getElementById('searchInput').value = '';
+    loadUsers(1, '');
+  }
+
+  function goPage(p) {
+    const val = document.getElementById('searchInput').value.trim();
+    loadUsers(p, val);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function handleLogout() {
+    fetch('/api/v1/admin/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin'
+    }).finally(() => {
+      window.location.href = '/index.html';
+    });
+  }
+
+  // 回车搜索
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+</script>
+</body>
+</html>

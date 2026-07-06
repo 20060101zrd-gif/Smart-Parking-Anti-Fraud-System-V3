@@ -72,6 +72,8 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>黑名单管理</a>
       <a onclick="switchPage('whitelist')" data-page="whitelist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>白名单管理</a>
+      <a onclick="switchPage('users')" data-page="users" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>用户管理</a>
     </nav>
     <div class="px-3 py-4 border-t border-gray-100">
       <p class="text-xs text-gray-400">当前管理员</p>
@@ -228,6 +230,66 @@
         <table><thead><tr><th>类型</th><th>值</th><th>备注</th><th>操作</th></tr></thead><tbody id="wl-tbody"></tbody></table>
       </div>
     </div>
+
+    <!-- Users Page -->
+    <div id="page-users" class="page-view">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">用户管理</h1>
+          <p class="text-sm text-gray-500 mt-1">共 <span id="users-total" class="font-semibold text-gray-700">0</span> 条注册记录</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <div class="flex-1 flex items-center gap-2 min-w-0 bg-gray-50 rounded-lg px-3 py-2 border border-gray-100 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-200 transition-all">
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="users-search" placeholder="输入手机号精确搜索，或输入姓名模糊搜索" class="bg-transparent border-none focus:ring-0 flex-1 min-w-0 text-sm" onkeydown="if(event.key==='Enter')loadUsers(1)">
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-sm inline-flex items-center gap-1 bg-white text-blue-600 border border-blue-200 hover:bg-blue-50" onclick="loadUsers(1)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              查询
+            </button>
+            <button class="btn btn-sm inline-flex items-center gap-1 bg-white text-gray-500 border border-gray-200 hover:bg-gray-50" onclick="document.getElementById('users-search').value='';loadUsers(1)">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              重置
+            </button>
+            <span class="text-gray-300 mx-1">|</span>
+            <button id="users-reveal-all-btn" class="btn btn-sm inline-flex items-center gap-1 bg-white text-amber-600 border border-amber-200 hover:bg-amber-50" onclick="revealAllPhones()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              显示全部明文
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">手机号输入后自动转为 SHA256 哈希精确匹配，展示时 AES 解密后脱敏（中间四位隐藏）</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>姓名</th>
+              <th>手机号</th>
+              <th class="hidden lg:table-cell">手机号哈希（前16位）</th>
+              <th class="hidden lg:table-cell">设备哈希（前16位）</th>
+              <th>状态</th>
+              <th>注册时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between mt-4" id="users-pager">
+        <span class="text-sm text-gray-500" id="users-info"></span>
+        <div class="flex gap-2">
+          <button class="btn btn-sm" onclick="usersPage(-1)">上一页</button>
+          <button class="btn btn-sm" onclick="usersPage(1)">下一页</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -248,6 +310,7 @@
 
 <script>
 let currentPage='overview', logCurPage=1, blCurPage=1;
+let usersCurPage=1, usersRevealed={};
 const api=(url,opts={})=>fetch('/api/v1/admin'+url,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opts}).then(r=>r.json());
 
 function toast(msg,ok=true){
@@ -265,6 +328,7 @@ function switchPage(p){
   currentPage=p;
   if(p==='overview')loadOverview();if(p==='config')loadConfig();if(p==='logs')loadLogs();
   if(p==='blacklist')loadBlacklist();if(p==='whitelist')loadWhitelist();
+  if(p==='users')loadUsers(1);
 }
 
 // ── Login / Logout ──
@@ -336,7 +400,7 @@ async function loadOverview(){
         <div style="width:45%;height:${Math.max(0.3,hI)}%;background:${anom?'#dc2626':'#f87171'};border-radius:2px 2px 0 0;min-width:8px;cursor:pointer;transition:height .3s" title="${t.day} 拦截 ${Number(t.cnt).toLocaleString()}" onmouseenter="showTooltip(event,'${t.day}','拦截 ${Number(t.cnt).toLocaleString()}${anom?' ⚠':''}')" onmouseleave="hideTooltip()"></div>
         <div style="width:45%;height:${Math.max(0.3,hR)}%;background:#60a5fa;border-radius:2px 2px 0 0;min-width:8px;cursor:pointer;transition:height .3s" title="${t.day} 注册 ${Number(rv).toLocaleString()}" onmouseenter="showTooltip(event,'${t.day}','注册 ${Number(rv).toLocaleString()}')" onmouseleave="hideTooltip()"></div>
       </div>
-      ${anom?'<span class="text-[10px] leading-none mt-0.5" title="超均值80%">🔴</span>':''}
+      ${anom?'<span class="inline-block w-2 h-2 rounded-full bg-red-600 mt-0.5" title="超均值80%"></span>':''}
     </div>`;
   }).join('');
   document.getElementById('x-axis-labels').innerHTML=trend.map(t=>`<span class="text-center" style="flex:1;max-width:72px">${fmtDate(t.day)}</span>`).join('');
@@ -599,6 +663,144 @@ async function addWhitelist(){
 async function removeWhitelist(type,value){
   const r=await api('/whitelist/remove',{method:'POST',body:JSON.stringify({type,value})});
   toast(r.message,r.code===20000);if(r.code===20000)loadWhitelist();
+}
+
+// ── Users ──
+async function loadUsers(page){
+  usersCurPage=page||1;
+  const search=document.getElementById('users-search').value.trim();
+  let url=`/users?page=${usersCurPage}&pageSize=20`;
+  if(search)url+=`&search=${encodeURIComponent(search)}`;
+  const r=await api(url);
+  if(r.code!==20000){document.getElementById('users-tbody').innerHTML=`<tr><td colspan="8" class="text-center py-12 text-gray-400">${r.message||'加载失败'}</td></tr>`;return;}
+
+  const d=r.data;
+  document.getElementById('users-total').textContent=d.total||0;
+
+  if(!d.list||!d.list.length){
+    document.getElementById('users-tbody').innerHTML='<tr><td colspan="8" class="text-center py-12 text-gray-400">暂无匹配的用户记录</td></tr>';
+    document.getElementById('users-info').textContent='第0页 / 共0条';
+    updateRevealAllBtn();
+    return;
+  }
+
+  document.getElementById('users-tbody').innerHTML=d.list.map(u=>{
+    const statusClass=u.status==='正常'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700';
+    const revealed=usersRevealed[u.id]||'';
+    const phoneCell=revealed
+      ? `<span class="font-mono text-xs text-green-700">${revealed}</span>`
+      : `<span class="font-mono text-xs">${u.phone}</span>`;
+    const actionBtn=revealed
+      ? `<button class="btn btn-sm text-xs text-gray-400 border-gray-200 hover:bg-gray-50" onclick="hidePhone(${u.id})">隐藏</button>`
+      : `<button class="btn btn-sm text-xs text-blue-500 border-blue-200 hover:bg-blue-50" onclick="revealPhone(${u.id},this)">显示</button>`;
+    return `<tr>
+      <td class="text-xs text-gray-500">${u.id}</td>
+      <td class="text-sm font-medium">${u.name||'-'}</td>
+      <td>${phoneCell}</td>
+      <td class="font-mono text-xs text-gray-400 hidden lg:table-cell">${u.phoneHash||'--'}</td>
+      <td class="font-mono text-xs text-gray-400 hidden lg:table-cell">${u.deviceHash||'--'}</td>
+      <td><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${statusClass}">${u.status}</span></td>
+      <td class="text-xs text-gray-500 whitespace-nowrap">${u.registeredAt||'-'}</td>
+      <td>${actionBtn}</td>
+    </tr>`;
+  }).join('');
+
+  const totalPages=Math.ceil((d.total||0)/20)||1;
+  document.getElementById('users-info').textContent=`第${d.page}页 / 共${d.total}条`;
+  document.getElementById('users-pager').querySelectorAll('button').forEach((b,i)=>{
+    b.disabled=(i===0&&usersCurPage<=1)||(i===1&&usersCurPage>=totalPages);
+  });
+  updateRevealAllBtn();
+}
+
+async function revealPhone(userId, btnEl){
+  if(usersRevealed[userId]) return;
+  if(btnEl)btnEl.disabled=true;
+  const r=await api(`/users/phone/${userId}`);
+  if(r.code===20000){
+    usersRevealed[userId]=r.data.phone;
+    loadUsers(usersCurPage);
+  }else{
+    if(btnEl)btnEl.disabled=false;
+    toast(r.message||'解密失败',false);
+  }
+}
+
+function hidePhone(userId){
+  delete usersRevealed[userId];
+  loadUsers(usersCurPage);
+}
+
+function updateRevealAllBtn(){
+  const btn=document.getElementById('users-reveal-all-btn');
+  const tbody=document.getElementById('users-tbody');
+  if(!btn||!tbody)return;
+  const rows=tbody.querySelectorAll('tr');
+  let visibleCount=0, hiddenCount=0;
+  rows.forEach(tr=>{
+    const td=tr.querySelector('td:first-child');
+    if(td){
+      const id=parseInt(td.textContent);
+      if(id){
+        if(usersRevealed[id])visibleCount++;else hiddenCount++;
+      }
+    }
+  });
+  if(visibleCount>0 && hiddenCount===0){
+    // all revealed
+    btn.innerHTML='<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>隐藏全部明文';
+    btn.className='btn btn-sm inline-flex items-center gap-1 bg-white text-gray-500 border border-gray-200 hover:bg-gray-50';
+  }else{
+    // has hidden rows
+    btn.innerHTML='<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>显示全部明文';
+    btn.className='btn btn-sm inline-flex items-center gap-1 bg-white text-amber-600 border border-amber-200 hover:bg-amber-50';
+  }
+}
+
+async function revealAllPhones(){
+  const tbody=document.getElementById('users-tbody');
+  const rows=tbody.querySelectorAll('tr');
+  // 判断当前状态：全部已显示则隐藏，否则显示
+  const ids=[];
+  let allRevealed=true;
+  rows.forEach(tr=>{
+    const td=tr.querySelector('td:first-child');
+    if(td){
+      const id=parseInt(td.textContent);
+      if(id){
+        ids.push(id);
+        if(!usersRevealed[id])allRevealed=false;
+      }
+    }
+  });
+
+  if(allRevealed && ids.length>0){
+    // 全部隐藏
+    ids.forEach(id=>delete usersRevealed[id]);
+    loadUsers(usersCurPage);
+    return;
+  }
+
+  const hiddenIds=ids.filter(id=>!usersRevealed[id]);
+  if(hiddenIds.length===0)return;
+
+  const btn=document.getElementById('users-reveal-all-btn');
+  btn.disabled=true;btn.textContent='解密中...';
+
+  const r=await api('/users/decrypt-phones',{method:'POST',body:JSON.stringify({ids:hiddenIds})});
+  if(r.code===20000){
+    Object.assign(usersRevealed,r.data.phones||{});
+    loadUsers(usersCurPage);
+  }else{
+    toast(r.message||'批量解密失败',false);
+  }
+  btn.disabled=false;
+  updateRevealAllBtn();
+}
+
+function usersPage(d){
+  usersCurPage=Math.max(1,usersCurPage+d);
+  loadUsers(usersCurPage);
 }
 
 (async function(){

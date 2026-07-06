@@ -69,4 +69,9 @@ router.get('/blacklist/search-phone',    adminIpLimiter, adminController.searchB
 router.post('/blacklist/unban-phone',    adminIpLimiter, adminController.unbanByPhone);
 router.post('/blacklist/unban-hash',     adminIpLimiter, adminController.unbanByPhoneHash);
 
+// 🆕 用户管理
+router.get('/users',                   adminIpLimiter, adminController.getUsers);
+router.get('/users/phone/:id',         adminIpLimiter, adminController.getUserPhone);
+router.post('/users/decrypt-phones',   adminIpLimiter, adminController.decryptPhones);
+
 module.exports = router;

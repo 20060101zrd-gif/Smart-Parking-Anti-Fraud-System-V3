@@ -884,6 +884,119 @@ class AdminController {
     } catch (err) { next(err); }
   }
 
+  // 🆕 用户管理 — 分页查询 + 自动解密手机号（脱敏展示）
+  async getUsers(req, res, next) {
+    try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20));
+      const offset = (page - 1) * pageSize;
+      const search = (req.query.search || '').trim();
+
+      // 构建搜索条件
+      let where = 'WHERE 1=1';
+      const params = [];
+
+      if (search) {
+        // 按手机号搜索：先转成 phone_hash 再精确匹配
+        if (/^1[3-9]\d{9}$/.test(search)) {
+          const phoneHash = encryption.hashPhone(search);
+          where += ' AND phone_hash = ?';
+          params.push(phoneHash);
+        } else {
+          // 按姓名模糊搜索
+          where += ' AND name LIKE ?';
+          params.push(`%${search}%`);
+        }
+      }
+
+      // 查总数
+      const countRow = await db.get(
+        `SELECT COUNT(*) AS total FROM sys_users ${where}`, params
+      );
+      const total = countRow?.total || 0;
+
+      // 查分页数据
+      const rows = await db.all(
+        `SELECT id, phone, phone_hash, device_hash, name, status, registered_at, cancelled_at
+         FROM sys_users ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
+        [...params, pageSize, offset]
+      );
+
+      // 日期格式化：MySQL DATETIME → YYYY-MM-DD HH:mm:ss
+      const fmtDate = (v) => {
+        if (!v) return '';
+        const d = v instanceof Date ? v : new Date(v);
+        if (isNaN(d.getTime())) return String(v).slice(0, 19).replace('T', ' ');
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      };
+
+      // 解密 + 脱敏手机号
+      const list = rows.map(row => {
+        let phoneDisplay = '(解密失败)';
+        try {
+          const plainPhone = encryption.decrypt(row.phone);
+          // 脱敏：138****5678
+          phoneDisplay = plainPhone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+        } catch (e) {
+          phoneDisplay = (row.phone || '').substring(0, 16) + '...';
+        }
+
+        return {
+          id: row.id,
+          name: row.name,
+          phone: phoneDisplay,
+          phoneHash: (row.phone_hash || '').substring(0, 16) + '...',
+          deviceHash: (row.device_hash || '').substring(0, 16) + '...',
+          status: row.status === 1 ? '正常' : '已注销',
+          registeredAt: fmtDate(row.registered_at),
+          cancelledAt: fmtDate(row.cancelled_at)
+        };
+      });
+
+      // 审计日志
+      auditService.logAction(req.admin.adminId, 'QUERY_USERS', `page=${page}&search=${search}`, req.ip);
+
+      return success(res, { list, total, page, pageSize }, '用户列表查询成功');
+    } catch (err) { next(err); }
+  }
+
+  // 单个用户手机号解密（按 ID）
+  async getUserPhone(req, res, next) {
+    try {
+      const id = parseInt(req.params.id);
+      if (!id) return fail(res, 400, 40000, '无效的用户ID');
+      const row = await db.get('SELECT phone FROM sys_users WHERE id = ?', [id]);
+      if (!row) return fail(res, 404, 40400, '用户不存在');
+      const plainPhone = encryption.decrypt(row.phone);
+      auditService.logAction(req.admin.adminId, 'VIEW_PHONE_SINGLE', `user_id=${id}`, req.ip);
+      return success(res, { id, phone: plainPhone }, '手机号解密成功');
+    } catch (err) { next(err); }
+  }
+
+  // 批量解密手机号
+  async decryptPhones(req, res, next) {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return fail(res, 400, 40000, '请提供用户ID列表');
+      }
+      if (ids.length > 100) return fail(res, 400, 40000, '单次最多解密100条');
+
+      const placeholders = ids.map(() => '?').join(',');
+      const rows = await db.all(
+        `SELECT id, phone FROM sys_users WHERE id IN (${placeholders})`,
+        ids
+      );
+      const phones = {};
+      for (const row of rows) {
+        phones[row.id] = encryption.decrypt(row.phone);
+      }
+      auditService.logAction(req.admin.adminId, 'VIEW_PHONE_BATCH', `count=${ids.length}`, req.ip);
+      return success(res, { phones }, `已解密 ${Object.keys(phones).length} 条手机号`);
+    } catch (err) { next(err); }
+  }
+
 }
 
 
