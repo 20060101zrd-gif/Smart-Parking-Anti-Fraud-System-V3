@@ -63,82 +63,141 @@
 
 ## 系统整体结构
 
-```
-+----------------------------------------------------+
-|  手机 App (React Native + Expo)                      |
-|  注册领券 / 滑块验证 / 注销账号 / 风控拦截提示          |
-+----------------------------------------------------+
-|  后端服务 (Node.js + Express)                        |
-|  中间件链: IP黑名单 --> 注册频控 --> 全局防刷 --> 手机号限流 |
-|  服务层: RiskService / CaptchaService / AuthService   |
-+---------------------+------------------------------+
-|  Redis 7              |  MySQL 8.0                   |
-|  限流计数器             |  11 张风控表 (InnoDB)          |
-|  黑名单高速命中         |  手机号 AES-256 加密存储         |
-|  TTL 自动过期          |  SHA256 哈希索引查重            |
-+---------------------+------------------------------+
-|  测试: 240 个用例 (红队渗透 + 蓝队验收)                  |
-|  部署: Docker Compose 一键启动 (3 个容器)                |
-+----------------------------------------------------+
-```
+| 层 | 技术 | 职责 |
+|:---|:---|:---|
+| 手机 App | React Native + Expo | 注册领券 / 滑块验证 / 注销账号 / 风控拦截提示 |
+| 后端服务 | Node.js + Express | 四层中间件链 + RiskService / CaptchaService / AuthService |
+| 缓存 | Redis 7 | 限流计数器 / 黑名单高速命中 / TTL 自动过期 |
+| 数据库 | MySQL 8.0 | 11 张风控表 (InnoDB) / 手机号 AES-256 加密 / SHA256 哈希索引 |
+| 测试 | 240 用例 | 红队渗透 + 蓝队验收 + Jest 单元测试 |
+| 部署 | Docker Compose | 3 个容器（backend / redis / mysql）一键启动 |
+
+---
+
+## 系统截图
+
+<details open>
+<summary>C 端（手机 App）</summary>
+
+| 注册页面 | 注册成功 | 已有优惠券 |
+|:---:|:---:|:---:|
+| ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
+
+| 注销确认 | 风控拦截 | 滑块验证 |
+|:---:|:---:|:---:|
+| ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) |
+
+</details>
+
+<details open>
+<summary>B 端（管理后台）</summary>
+
+- **安全登录**
+  <img src="screenshots/b-admin-login.png" width="600" />
+
+- **风控监控大盘**
+  <img src="screenshots/b-admin-dashboard.png" width="600" />
+
+- **拦截日志**
+  <img src="screenshots/b-intercept-logs.png" width="600" />
+
+- **黑名单管理**
+  <img src="screenshots/b-blacklist.png" width="600" />
+
+- **白名单管理**
+  <img src="screenshots/b-whitelist.png" width="600" />
+
+- **规则配置**
+  <img src="screenshots/b-rules-config.png" width="600" />
+
+- **用户管理（脱敏）**
+  <img src="screenshots/b-users-list.png" width="600" />
+
+- **用户管理（明文）**
+  <img src="screenshots/b-users-revealed.png" width="600" />
+
+</details>
+
+<details open>
+<summary>基础设施</summary>
+
+- **Docker 容器**
+  <img src="screenshots/infra-docker.png" width="600" />
+
+- **Redis 黑名单 Key**
+  <img src="screenshots/infra-redis.png" width="600" />
+
+- **MySQL 用户表（密文）**
+  <img src="screenshots/infra-mysql-users.png" width="600" />
+
+- **MySQL 拦截日志**
+  <img src="screenshots/infra-mysql-logs.png" width="600" />
+
+</details>
 
 ---
 
 ## 数据安全
 
-### 手机号 -- 双层存储
+### 手机号：双层存储
 
-同一个手机号在系统中产生**两份不同用途**的数据：
+同一个手机号产生两份数据，各司其职：
 
 ```
-用户输入的手机号: 13812345678
-         |
-         +--> AES-256-CBC 加密
-         |    存到 sys_users.phone 列
-         |    格式: iv_hex:cipher_hex（如 4b8e3a2f...:e81c7a3d...）
-         |    用途: 管理员查看用户详情时解密
-         |    能否还原: 能（需要密钥）
-         |
-         +--> SHA256 加盐哈希
-              存到 sys_users.phone_hash 列
-              格式: 64 位十六进制字符串
-              用途: 黑名单匹配、注销库查重、注册唯一性校验
-              能否还原: 不能（单向不可逆）
+13812345678
+   |
+   +--> sys_users.phone (AES-256-CBC 加密)
+   |    格式: iv:cipher
+   |    可逆: 是，需 ENCRYPT_KEY 解密
+   |    用途: 管理员查看用户详情
+   |
+   +--> sys_users.phone_hash (SHA256 加盐哈希)
+        格式: 64 位 hex
+        可逆: 否，单向不可逆
+        用途: 黑名单匹配、查重
 ```
 
-**为什么需要两份？**
+**为什么两份？**
 
-查黑名单时不需要看到手机号原文，只需要知道「这个手机号是不是在黑名单里」。用 SHA256 哈希比对，比逐条 AES 解密快几个数量级，而且不需要触碰解密密钥 -- 遵循「最小化敏感信息暴露」原则。
+- 查黑名单只需要「是或否」，SHA256 比对比逐条解密快几个数量级
+- 哈希操作不触碰解密密钥，遵循最小化敏感信息暴露原则
 
-**加密参数：**
-- 算法：AES-256-CBC（密钥 32 字节，每次加密生成随机 16 字节 IV）
-- 密钥来源：`.env` 中的 `ENCRYPT_KEY` --> SHA256 派生 --> 固定 32 字节
-- 存储格式：`iv:cipher`（IV 和密文拼在一起，解密不需要另外查）
+**加密细节**
 
-**用户管理与手机号解密：**
+- AES-256-CBC，密钥来自 `.env` 的 `ENCRYPT_KEY` 经 SHA256 派生为 32 字节
+- 每次加密随机生成 16 字节 IV，格式 `iv:cipher`，自包含
+- 随机 IV 确保相同手机号每次加密结果不同，阻断频率分析
 
-管理员后台「用户管理」页面列出所有注册用户，手机号默认脱敏显示（`138****5678`）。每行有「显示」按钮，点击后调用专用解密接口获取明文；工具栏有「显示全部明文」按钮，批量解密当前页。每次解密操作都记录审计日志 -- 确保明文手机号不会默认暴露，只在管理员主动操作且全程可追溯的情况下才显示。
+### 用户管理：手机号显示与隐藏
 
-### 管理员密码 -- Argon2id 慢哈希
+管理员后台默认显示脱敏手机号（`138****5678`）。
 
-管理员密码不存明文，用 Argon2id（2015 年国际密码哈希竞赛冠军）哈希后存储。选用参数 `memoryCost=16MB, timeCost=2` -- 每次验证约 50-100ms，正常登录无感，但显卡暴力破解每秒只能试十几次。
+- 每行「显示」按钮：调用 `/users/phone/:id` 获取明文
+- 工具栏「显示全部明文」：批量解密当前页
+- 每次解密操作写入审计日志，全程可追溯
+- 明文显示后按钮变为「隐藏」，可一键切换回脱敏
 
-### 登录凭证 -- RS256 非对称 JWT
+### 管理员密码：Argon2id
 
-管理员登录后获得 JWT（存在 HttpOnly Cookie 中，前端 JS 读不到）。
+密码不存明文，用 Argon2id（2015 年密码哈希竞赛冠军）保存。
 
-**为什么选 RS256（非对称）而不是 HS256（对称）？**
-- RS256 的私钥只在一处（签发服务的服务器上），暴露面最小
-- 公钥可以安全分发给其他需要验证 JWT 的服务，即使公钥泄露也不会被伪造
-- 代码里显式限制 `algorithms: ['RS256']` 防止攻击者把算法降级成 `none` 绕过签名
+参数 `memoryCost=16MB, timeCost=2`：正常登录 50-100ms 无感，GPU 暴力破解每秒仅十几次。
 
-Cookie 安全配置：`httpOnly: true`（防 XSS 脚本窃取）、`sameSite: 'strict'`（防跨站伪造请求）。
+### 登录凭证：RS256 JWT
+
+登录后 JWT 存 HttpOnly Cookie，前端 JS 不可读。
+
+选择 RS256（非对称）的理由：
+
+- 私钥仅签发服务持有，暴露面最小
+- 公钥可安全分发验证，泄露不影响安全
+- `algorithms: ['RS256']` 防止 `alg: none` 降级攻击
+
+Cookie 加固：`httpOnly` 防 XSS，`sameSite: strict` 防 CSRF。
 
 ---
 
 ## 技术选型
-
-这里不讲「为什么不用某某技术」，只讲**选了谁、解决了什么具体问题**。
 
 ### Node.js + Express（后端框架）
 
@@ -182,21 +241,41 @@ Redis `EXPIRE` 天然支持滑动窗口的时间重置 -- 第一个请求设 60 
 
 ---
 
-## 自动化测试：240 个用例
+## 自动化测试
 
-| 套件 | 用例数 | 通过率 | 评级 |
+测试报告自动生成于 `tests/reports/`。
+
+### 红队渗透测试：26 用例，100% 通过，评级 A+
+
+| 模块 | 攻击项 | 防线守住 | 评级 |
 |:---|:---|:---|:---|
-| 红队渗透攻击 | 26 | 100% | A+ |
-| 蓝队功能验收 | 182 | 100% | 全部通过 |
-| Jest 单元测试 | 32 | 100% | 全部通过 |
-| **合计** | **240** | **100%** | -- |
+| 风控核心渗透 | 16 | 16 | A+ |
+| 数据层安全（SQL 注入 / 密钥绕过） | 4 | 4 | A+ |
+| 管理后台攻防（JWT 伪造 / 越权） | 6 | 6 | A+ |
 
-- **红队（渗透攻击）**：JWT 伪造、SQL 注入、Token 重放、黑名单膨胀注入、暴力注册压测（13,696 次请求，1,369 QPS）
-- **蓝队（功能验收）**：三级分级、IP 封禁、滑块攻防、白名单豁免、拦截日志完整性、健康探针、优雅关闭
-- **Jest 单元测试**：`risk.service` + `encryption` 纯逻辑测试
+- 恶意重刷压测：**13,696 次请求，1,369 QPS，平均延迟 6.8ms**
+- JWT 伪造攻击：**2 次非法伪造全部拦截，0 次越权**
+- 黑名单膨胀注入：**100 条，97 条被限流拦截（97%）**
+
+### 蓝队功能验收：182 用例，100% 通过
+
+| 模块 | 用例 | 通过 | 备注 |
+|:---|:---|:---|:---|
+| 风控核心（三级分级 / IP 封禁 / 滑块 / 白名单） | 69 | 69 | 耗时 241s |
+| 数据层（表结构 / 读写一致 / 并发 / 事务 / 加密） | 8 | 8 | -- |
+| 管理员后台（登录 / 限流 / 黑名单 CRUD / 概览） | 10 | 10 | -- |
+| 工程化改造（统一格式 / JWT 鉴权 / 权限拦截） | 10 | 10 | -- |
+| App 配置校验（app.json / eas.json / 资源 / 依赖） | 29 | 29 | -- |
+| 健康探针（存活 / 就绪 / MySQL 降级 / Redis 降级） | 44 | 44 | 耗时 53s |
+| 优雅关闭（SIGTERM / SIGKILL / 资源释放） | 12 | 12 | 耗时 25s |
+
+### Jest 单元测试：32 用例，100% 通过
+
+- `risk.service.test.js`：18 用例全部通过
+- `encryption.test.js`：14 用例全部通过
 
 ```bash
-cd tests && npm install && node index.js    # 一键运行
+cd tests && npm install && node index.js    # 一键运行全部测试
 ```
 
 ---
@@ -241,102 +320,38 @@ node index.js
 
 ## API 接口清单
 
-### C 端（用户使用）
+### C 端（用户）
 
 | 方法 | 路径 | 说明 |
 |:---|:---|:---|
-| `POST` | `/api/v1/user/register` | 注册领券（经过四层中间件链） |
-| `POST` | `/api/v1/user/verify-captcha` | 滑块验证 + 注册（需 captchaToken） |
-| `POST` | `/api/v1/user/cancel` | 注销账号（触发设备 + 手机号 90 天黑名单） |
-| `GET` | `/api/v1/captcha/generate` | 获取滑块验证码（答案存 Redis，60s 过期） |
-| `POST` | `/api/v1/captcha/verify` | 提交滑块位置（+-5px 容差，答案验证后立即删除防重放） |
+| `POST` | `/api/v1/user/register` | 注册领券，经过四层中间件链 |
+| `POST` | `/api/v1/user/verify-captcha` | 滑块验证 + 注册 |
+| `POST` | `/api/v1/user/cancel` | 注销账号，触发 90 天黑名单 |
+| `GET` | `/api/v1/captcha/generate` | 获取滑块验证码 |
+| `POST` | `/api/v1/captcha/verify` | 提交滑块位置，答案一次性核销 |
 
-### B 端（管理员使用）
+### B 端（管理员）
 
 | 方法 | 路径 | 说明 |
 |:---|:---|:---|
-| `POST` | `/api/v1/admin/login` | 管理员登录（Argon2id 验证密码 --> RS256 JWT --> Cookie） |
-| `GET` | `/api/v1/admin/overview` | 风控大盘（今日拦截数 / 用户总数 / 黑名单数 / 趋势图） |
-| `GET` | `/api/v1/admin/intercept-logs` | 拦截日志分页（支持 IP / 时间范围筛选） |
-| `PUT` | `/api/v1/admin/config` | 动态调整风控规则阈值 |
-| `GET` | `/api/v1/admin/blacklist` | 黑名单分页（MySQL + Redis 双源合并，支持手机号搜索） |
+| `POST` | `/api/v1/admin/login` | 登录，返回 JWT Cookie |
+| `GET` | `/api/v1/admin/overview` | 风控大盘数据 |
+| `GET` | `/api/v1/admin/intercept-logs` | 拦截日志，支持 IP/日期筛选 |
+| `PUT` | `/api/v1/admin/config` | 动态调整风控规则 |
+| `GET` | `/api/v1/admin/blacklist` | 黑名单，双源合并 + 手机号搜索 |
 | `POST` | `/api/v1/admin/blacklist/add` | 手动添加黑名单 |
-| `POST` | `/api/v1/admin/blacklist/remove` | 解封黑名单 |
-| `POST` | `/api/v1/admin/blacklist/unban-phone` | 按手机号解封（同时清理 Redis + MySQL） |
+| `POST` | `/api/v1/admin/blacklist/remove` | 移除黑名单 |
+| `POST` | `/api/v1/admin/blacklist/unban-phone` | 按手机号解封 |
 | `GET` | `/api/v1/admin/whitelist` | 白名单列表 |
-| `POST` | `/api/v1/admin/whitelist/add` | 添加白名单（豁免所有风控检查） |
+| `POST` | `/api/v1/admin/whitelist/add` | 添加白名单 |
 | `POST` | `/api/v1/admin/whitelist/remove` | 移除白名单 |
-| `GET` | `/api/v1/admin/users` | 用户列表（AES 解密后脱敏展示，分页，支持手机号/姓名搜索） |
-| `GET` | `/api/v1/admin/users/phone/:id` | 按 ID 解密单个用户手机号（含审计日志） |
-| `POST` | `/api/v1/admin/users/decrypt-phones` | 批量解密手机号（含审计日志，最多 100 条） |
+| `GET` | `/api/v1/admin/users` | 用户列表，脱敏 + 分页 + 搜索 |
+| `GET` | `/api/v1/admin/users/phone/:id` | 单用户手机号解密 |
+| `POST` | `/api/v1/admin/users/decrypt-phones` | 批量解密，最多 100 条 |
 | `GET` | `/api/v1/health` | 存活探针 |
-| `GET` | `/api/v1/health/ready` | 就绪探针（MySQL + Redis 连接状态） |
+| `GET` | `/api/v1/health/ready` | 就绪探针 |
 
----
-
-## 系统截图
-
-### C 端（手机 App）
-
-| 注册页面 | 注册成功 | 已有优惠券 |
-|:---:|:---:|:---:|
-| ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
-
-| 注销确认 | 风控拦截 | 滑块验证 |
-|:---:|:---:|:---:|
-| ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) |
-
-### B 端（管理后台）
-
-- **安全登录** -- Argon2id 密码校验 + RS256 JWT
-
-  <img src="screenshots/b-admin-login.png" width="600" />
-
-- **风控监控大盘** -- 实时拦截趋势、用户统计、黑名单数
-
-  <img src="screenshots/b-admin-dashboard.png" width="600" />
-
-- **拦截日志** -- 每条拦截的 IP、设备哈希、原因、风险等级
-
-  <img src="screenshots/b-intercept-logs.png" width="600" />
-
-- **黑名单管理** -- 支持手机号搜索、手动添加、解封
-
-  <img src="screenshots/b-blacklist.png" width="600" />
-
-- **白名单管理** -- 免检 VIP 通道
-
-  <img src="screenshots/b-whitelist.png" width="600" />
-
-- **规则配置** -- 在线调整限流阈值、黑名单天数
-
-  <img src="screenshots/b-rules-config.png" width="600" />
-
-- **用户管理（脱敏状态）** -- 手机号 AES 解密后脱敏显示（`138****5678`），按手机号搜索时自动转 SHA256 哈希匹配；操作列提供「显示」按钮，工具栏提供「显示全部明文」
-
-  <img src="screenshots/b-users-list.png" width="600" />
-
-- **用户管理（明文显示）** -- 点击「显示全部明文」后，手机号变为绿色完整明文，操作列按钮变为「隐藏」；再次点击可切换回脱敏状态。所有解密操作记入审计日志
-
-  <img src="screenshots/b-users-revealed.png" width="600" />
-
-### 基础设施
-
-- **Docker 容器** -- 三个服务（backend / redis / mysql）全部运行中
-
-  <img src="screenshots/infra-docker.png" width="600" />
-
-- **Redis 黑名单 Key** -- `redis-cli KEYS pf:risk:*` 展示缓存中的黑名单
-
-  <img src="screenshots/infra-redis.png" width="600" />
-
-- **MySQL 用户表** -- `phone` 列为 AES-256-CBC 密文，非明文
-
-  <img src="screenshots/infra-mysql-users.png" width="600" />
-
-- **MySQL 拦截日志表** -- 原因、风险等级、时间戳
-
-  <img src="screenshots/infra-mysql-logs.png" width="600" />
+> 解密接口均有审计日志记录。
 
 ---
 
