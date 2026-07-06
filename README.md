@@ -2,6 +2,8 @@
 
 > 全栈风控平台，防羊毛党刷取停车场新人优惠券
 
+**一句话：帮停车场自动识别和拦截羊毛党刷券行为，让每一张新人优惠券都发到真正有价值的用户手上，节省营销预算。**
+
 ![Tests](https://img.shields.io/badge/Tests-240/240%20Passed-brightgreen) ![Node.js](https://img.shields.io/badge/Node.js-18.x-green) ![Docker](https://img.shields.io/badge/Docker-Supported-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
