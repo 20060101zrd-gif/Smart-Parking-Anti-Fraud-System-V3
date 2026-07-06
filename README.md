@@ -76,8 +76,7 @@
 
 ## 系统截图
 
-<details open>
-<summary>C 端（手机 App）</summary>
+### C 端（手机 App）
 
 | 注册页面 | 注册成功 | 已有优惠券 |
 |:---:|:---:|:---:|
@@ -87,53 +86,57 @@
 |:---:|:---:|:---:|
 | ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) |
 
-</details>
+### B 端（管理后台）
 
-<details open>
-<summary>B 端（管理后台）</summary>
+**安全登录**
 
-- **安全登录**
-  <img src="screenshots/b-admin-login.png" width="600" />
+<img src="screenshots/b-admin-login.png" width="600" />
 
-- **风控监控大盘**
-  <img src="screenshots/b-admin-dashboard.png" width="600" />
+**风控监控大盘**
 
-- **拦截日志**
-  <img src="screenshots/b-intercept-logs.png" width="600" />
+<img src="screenshots/b-admin-dashboard.png" width="600" />
 
-- **黑名单管理**
-  <img src="screenshots/b-blacklist.png" width="600" />
+**拦截日志**
 
-- **白名单管理**
-  <img src="screenshots/b-whitelist.png" width="600" />
+<img src="screenshots/b-intercept-logs.png" width="600" />
 
-- **规则配置**
-  <img src="screenshots/b-rules-config.png" width="600" />
+**黑名单管理**
 
-- **用户管理（脱敏）**
-  <img src="screenshots/b-users-list.png" width="600" />
+<img src="screenshots/b-blacklist.png" width="600" />
 
-- **用户管理（明文）**
-  <img src="screenshots/b-users-revealed.png" width="600" />
+**白名单管理**
 
-</details>
+<img src="screenshots/b-whitelist.png" width="600" />
 
-<details open>
-<summary>基础设施</summary>
+**规则配置**
 
-- **Docker 容器**
-  <img src="screenshots/infra-docker.png" width="600" />
+<img src="screenshots/b-rules-config.png" width="600" />
 
-- **Redis 黑名单 Key**
-  <img src="screenshots/infra-redis.png" width="600" />
+**用户管理（脱敏）**
 
-- **MySQL 用户表（密文）**
-  <img src="screenshots/infra-mysql-users.png" width="600" />
+<img src="screenshots/b-users-list.png" width="600" />
 
-- **MySQL 拦截日志**
-  <img src="screenshots/infra-mysql-logs.png" width="600" />
+**用户管理（明文）**
 
-</details>
+<img src="screenshots/b-users-revealed.png" width="600" />
+
+### 基础设施
+
+**Docker 容器**
+
+<img src="screenshots/infra-docker.png" width="600" />
+
+**Redis 黑名单 Key**
+
+<img src="screenshots/infra-redis.png" width="600" />
+
+**MySQL 用户表（密文）**
+
+<img src="screenshots/infra-mysql-users.png" width="600" />
+
+**MySQL 拦截日志**
+
+<img src="screenshots/infra-mysql-logs.png" width="600" />
 
 ---
 
