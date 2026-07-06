@@ -84,8 +84,7 @@
 |:---|:---|:---|
 | 手机 App | React Native + Expo | 注册领券 / 滑块验证 / 注销账号 / 风控拦截提示 |
 | 后端服务 | Node.js + Express | 四层中间件链 + RiskService / CaptchaService / AuthService |
-| 缓存 | Redis 7（高速缓存，查询速度比数据库快百倍以上） | 限流计数器 / 黑名单高速命中 / TTL 自动过期 |
-| 数据库 | MySQL 8.0 | 11 张风控表 (InnoDB) / 手机号 AES-256 加密 / SHA256 哈希索引 |
+| 双存储 | MySQL 8.0 + Redis 7 | MySQL 持久化 11 张风控表 + AES 加密 / Redis 高速限流 + 黑名单命中 |
 | 测试 | 240 用例 | 红队渗透 + 蓝队验收 + Jest 单元测试 |
 | 部署 | Docker Compose | 3 个容器（backend / redis / mysql）一键启动 |
 
@@ -166,7 +165,7 @@
 ```
 13812345678
    |
-   +--> sys_users.phone (AES-256-CBC 加密)
+   +--> sys_users.phone (AES-256-CBC，目前金融和政府系统广泛使用的加密标准)
    |    格式: iv:cipher
    |    可逆: 是，需 ENCRYPT_KEY 解密
    |    用途: 管理员后台查看用户详情
@@ -185,7 +184,7 @@
 
 管理员打开用户管理页面，所有手机号默认脱敏（`138****5678`）。只有点击「显示」按钮或「显示全部明文」时，后端才调用 AES 解密接口返回明文，操作同步写入 `sys_audit_logs`。明文显示后可一键切回脱敏。整个流程确保明文不会默认暴露在任何页面或日志中。
 
-### 管理员密码：Argon2id
+### 管理员密码：Argon2id（氩气二型哈希）
 
 管理后台的登录密码用 Argon2id（行业公认最安全的密码存储方式，数据库泄露后密码也极难被破解）保存。参数 `memoryCost=16MB, timeCost=2`：正常登录 50-100ms 无感，但如果攻击者拿到数据库后尝试 GPU 暴力破解，每秒只能试十几次。
 
@@ -219,23 +218,18 @@ router.post('/register',
 
 风控系统是 IO 密集型 -- 每次注册要读写 Redis（查黑名单、计数）和 MySQL（入库）。Node.js 的非阻塞 IO 在大量并发注册时不会因等待网络而阻塞后续请求，与 Go/Java 的多线程模型相比，在这种场景下代码量和心智负担更小。
 
-### MySQL 8.0（持久化）
+### 双存储：MySQL + Redis
 
-本系统 11 张表全部围绕停车反欺诈业务：`sys_users` 存注册用户，`sys_blacklist` + `risk_hash_archives` + `phone_blacklist_map` 三层黑名单沉淀，`risk_intercept_logs` 记录每次拦截，`sys_audit_logs` 追踪管理员操作。
+MySQL 和 Redis 在本系统中分工明确：
 
-一个关键的场景是注销：用户注销后，系统需要同时删除用户记录、写入设备黑名单、写入手机号哈希归档、写入映射表、同步 Redis。MySQL 的 `BEGIN/COMMIT` 事务保证这 5 步要么全做要么全不做，避免出现「用户已删但黑名单没写」的半成品状态。
+**MySQL 负责持久化**。11 张表全部围绕停车反欺诈业务：`sys_users` 存注册用户，`sys_blacklist` + `risk_hash_archives` + `phone_blacklist_map` 三层黑名单沉淀，`risk_intercept_logs` 记录每次拦截，`sys_audit_logs` 追踪管理员操作。注销时涉及 5 步操作，MySQL 的 `BEGIN/COMMIT` 事务保证要么全做要么全不做，避免「用户已删但黑名单没写」的半成品状态。参数化查询防范 SQL 注入，红队测试中 4 项 SQL 注入攻击全部被拦截。
 
-参数化查询（`pool.query(sql, [phoneHash])`）防范 SQL 注入，红队测试中 4 项 SQL 注入攻击全部被拦截。
+**Redis 负责高速拦截**。承担两个核心角色：
 
-### Redis 7（缓存与限流）
+- 限流计数：`pf:limit:reg_ip:{ip}` 是注册频控的计数器。`INCR` 命令单线程原子执行，避免并发竞态。第一个请求设 60 秒 TTL，窗口结束自动归零。
+- 黑名单命中：设备黑名单 `pf:risk:device_bl:{deviceId}` 和手机号注销库 `pf:risk:hash_bl:{phoneHash}` 均为 90 天 TTL。注册时亚毫秒级命中直接返回 403，无需触碰 MySQL，实现「热数据走缓存、冷数据走库」的分层架构。
 
-Redis 在本系统中承担两个核心角色：
-
-**限流计数**：`pf:limit:reg_ip:{ip}` 是注册频控的计数器。`INCR` 命令单线程原子执行 -- 两个并发请求同时到达时，不会出现「都读到 3，都认为自己是第 4 次」的竞态。第一个请求设 60 秒 TTL，窗口结束自动归零。
-
-**黑名单高速命中**：设备黑名单以 `pf:risk:device_bl:{deviceId}` 存储，手机号注销库以 `pf:risk:hash_bl:{phoneHash}` 存储，TTL 均为 90 天。注册时亚毫秒级命中直接返回 403，无需查询 MySQL。
-
-Redis 不可用时，限流切内存 Map + setTimeout，黑名单切内存 Set，验证码答案切内存缓存 -- 系统不会因缓存故障而拒绝服务。
+Redis 不可用时，限流自动切内存 Map，黑名单切内存 Set，验证码答案切内存缓存 -- 系统不会因缓存故障而拒绝服务。
 
 ### React Native + Expo（移动端）
 
