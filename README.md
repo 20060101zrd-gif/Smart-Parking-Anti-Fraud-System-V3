@@ -88,35 +88,35 @@
 
 ### B 端（管理后台）
 
-**安全登录**
+**安全登录** -- Argon2id 密码校验 + RS256 JWT
 
 <img src="screenshots/b-admin-login.png" width="600" />
 
-**风控监控大盘**
+**风控监控大盘** -- 实时拦截趋势、用户统计、黑名单数
 
 <img src="screenshots/b-admin-dashboard.png" width="600" />
 
-**拦截日志**
+**拦截日志** -- 每条拦截的 IP、设备哈希、原因、风险等级
 
 <img src="screenshots/b-intercept-logs.png" width="600" />
 
-**黑名单管理**
+**黑名单管理** -- 支持手机号搜索、手动添加、解封
 
 <img src="screenshots/b-blacklist.png" width="600" />
 
-**白名单管理**
+**白名单管理** -- 免检 VIP 通道
 
 <img src="screenshots/b-whitelist.png" width="600" />
 
-**规则配置**
+**规则配置** -- 在线调整限流阈值、黑名单天数
 
 <img src="screenshots/b-rules-config.png" width="600" />
 
-**用户管理（脱敏）**
+**用户管理（脱敏）** -- 手机号 AES 解密后脱敏显示，操作列「显示」按钮
 
 <img src="screenshots/b-users-list.png" width="600" />
 
-**用户管理（明文）**
+**用户管理（明文）** -- 点击后显示绿色完整明文，按钮切换为「隐藏」
 
 <img src="screenshots/b-users-revealed.png" width="600" />
 
