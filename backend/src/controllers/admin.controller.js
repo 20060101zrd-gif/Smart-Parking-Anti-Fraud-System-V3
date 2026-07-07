@@ -690,19 +690,39 @@ class AdminController {
     } catch (err) { next(err); }
   }
 
-  // 🆕 黑名单 — 手动添加
+  // 🆕 黑名单 — 手动添加（支持设备指纹 + 手机号）
   async addBlacklist(req, res, next) {
     try {
-      const { fingerprint, reason } = req.body;
-      if (!fingerprint) return fail(res,400,40000,'缺少指纹参数');
+      const { fingerprint, phone, reason } = req.body;
+      const encryption = require('../utils/encryption');
       const ea = new Date(Date.now()+90*24*3600000).toISOString().slice(0,19).replace('T',' ');
+
+      if (phone && /^1[3-9]\d{9}$/.test(phone)) {
+        // 手机号路径：hash 后写入双表（phone_blacklist_map + risk_hash_archives）
+        const phoneHash = encryption.hashPhone(phone);
+        const phoneMask = phone.slice(0,3) + '****' + phone.slice(7);
+        const fp = 'PHONE:' + phoneHash.slice(0,32);
+        await db.run(
+          `INSERT INTO phone_blacklist_map (phone_hash, fingerprint, phone_mask, created_at, expires_at) VALUES (?, ?, ?, NOW(), ?)
+           ON DUPLICATE KEY UPDATE created_at = VALUES(created_at), expires_at = VALUES(expires_at)`,
+          [phoneHash, fp, phoneMask, ea]);
+        await db.run(
+          `INSERT INTO risk_hash_archives (fingerprint, phone_hash, phone_mask, created_at, expires_at) VALUES (?, ?, ?, NOW(), ?)
+           ON DUPLICATE KEY UPDATE phone_hash = VALUES(phone_hash), phone_mask = VALUES(phone_mask), created_at = VALUES(created_at), expires_at = VALUES(expires_at)`,
+          [fp, phoneHash, phoneMask, ea]);
+        await db.run(`INSERT INTO sys_operation_logs (admin_id,action_type,target_resource,detail,ip_address) VALUES (?,'ADD_BLACKLIST',?,?,?)`,
+          [req.admin.adminId, phoneMask, reason||'手动添加（手机号）',req.ip||'127.0.0.1']).catch(()=>{});
+        return success(res,{phone:phoneMask},'黑名单条目已添加（手机号）');
+      }
+
+      if (!fingerprint) return fail(res,400,40000,'缺少指纹或手机号参数');
       await db.run(
         `INSERT INTO risk_hash_archives (fingerprint, phone_mask, created_at, expires_at) VALUES (?, ?, NOW(), ?)
          ON DUPLICATE KEY UPDATE phone_mask = VALUES(phone_mask), created_at = VALUES(created_at), expires_at = VALUES(expires_at)`,
         [fingerprint, '', ea]);
       await db.run(`INSERT INTO sys_operation_logs (admin_id,action_type,target_resource,detail,ip_address) VALUES (?,'ADD_BLACKLIST',?,?,?)`,
         [req.admin.adminId,fingerprint,reason||'手动添加',req.ip||'127.0.0.1']).catch(()=>{});
-      return success(res,{fingerprint},'黑名单条目已添加');
+      return success(res,{fingerprint},'黑名单条目已添加（设备指纹）');
     } catch (err) { next(err); }
   }
 

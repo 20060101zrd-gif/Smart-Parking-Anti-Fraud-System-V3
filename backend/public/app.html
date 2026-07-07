@@ -8,248 +8,293 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#ede9fe 100%);min-height:100vh;display:flex;align-items:center;justify-content:center}
-    input{outline:none}
+    input{outline:none}.page{display:none}.page.active{display:block}
+    .slide-track{position:relative;height:48px;background:#e5e7eb;border-radius:24px;overflow:hidden;touch-action:none}
+    .slide-progress{position:absolute;left:0;top:0;height:100%;background:rgba(99,102,241,0.25);border-radius:24px;width:0%;transition:width 0.05s}
+    .slide-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;font-weight:500}
+    .slide-thumb{position:absolute;left:0;top:0;width:48px;height:48px;background:#6366f1;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;z-index:2;cursor:grab;user-select:none}
+    .slide-thumb:active{cursor:grabbing}
   </style>
 </head>
 <body class="p-5">
-  <div class="w-full max-w-sm">
+  <div class="w-full max-w-sm relative">
 
-    <!-- Logo -->
-    <div class="text-center mb-8">
+    <!-- Logo (shared) -->
+    <div id="logo" class="text-center mb-8">
       <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-blue-200">
         <span class="text-white text-3xl font-bold">P</span>
       </div>
-      <h1 class="text-2xl font-extrabold text-gray-900">停小券</h1>
-      <p class="text-sm text-gray-500 mt-1">免费停车券 · 一键领取</p>
+      <h1 id="logo-title" class="text-2xl font-extrabold text-gray-900">停小券</h1>
+      <p id="logo-sub" class="text-sm text-gray-500 mt-1">免费停车券 · 一键领取</p>
     </div>
 
-    <!-- Card -->
-    <div class="bg-white rounded-3xl p-6 shadow-lg shadow-blue-100/50">
+    <!-- ═══ Card ═══ -->
+    <div class="bg-white rounded-3xl p-6 shadow-lg shadow-blue-100/50 relative">
 
-      <!-- Register Form -->
-      <div id="form-section">
+      <!-- ====== PAGE 1: Register ====== -->
+      <div id="page-register" class="page active">
         <div class="mb-5">
           <label class="block text-xs font-semibold text-gray-600 mb-1.5">手机号码</label>
           <div class="flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
-            <span class="pl-4 pr-2 text-gray-400 text-lg">🇨🇳</span>
-            <input type="tel" id="phone" maxlength="11" placeholder="输入11位手机号" class="flex-1 py-3.5 pr-4 bg-transparent text-base" inputmode="numeric" pattern="[0-9]*">
+            <span class="pl-4 pr-2 text-gray-400 text-sm font-bold">+86</span>
+            <input type="tel" id="phone" maxlength="11" placeholder="输入11位手机号" class="flex-1 py-3.5 pr-4 bg-transparent text-base" inputmode="numeric">
           </div>
         </div>
-
         <div class="mb-6">
           <label class="block text-xs font-semibold text-gray-600 mb-1.5">真实姓名</label>
           <div class="flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
-            <span class="pl-4 pr-2 text-gray-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            </span>
+            <span class="pl-4 pr-2 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></span>
             <input type="text" id="name" placeholder="输入真实姓名" class="flex-1 py-3.5 pr-4 bg-transparent text-base">
           </div>
         </div>
-
-        <button id="submit-btn" onclick="handleRegister()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all">
-          注册领券
-        </button>
-
-        <p id="form-error" class="text-center text-red-500 text-xs mt-3 hidden"></p>
+        <button id="register-btn" onclick="handleRegister()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all">注册领券</button>
+        <p id="register-error" class="text-center text-red-500 text-xs mt-3 hidden"></p>
       </div>
 
-      <!-- Success -->
-      <div id="success-section" class="hidden text-center py-4">
-        <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-          <svg class="w-9 h-9 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-        </div>
-        <h2 class="text-xl font-bold text-gray-900 mb-2">领取成功！</h2>
-        <p class="text-gray-500 text-sm mb-6">停车券已发放到您的账户</p>
-        <button onclick="resetForm()" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold">再领一张</button>
-      </div>
-
-      <!-- Captcha -->
-      <div id="captcha-section" class="hidden text-center py-2">
-        <p class="text-amber-600 font-semibold text-sm mb-4">⚠️ 检测到异常频率，请完成验证</p>
-        <div class="bg-gray-100 rounded-xl p-4 mb-4">
-          <p class="text-gray-400 text-xs mb-3">滑动下方滑块到最右侧</p>
-          <div class="relative h-12 bg-gray-200 rounded-full overflow-hidden">
-            <div id="captcha-progress" class="absolute left-0 top-0 h-full bg-blue-400 rounded-full transition-all" style="width:0%"></div>
-            <span class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs font-medium">→ 滑动验证 →</span>
-            <div id="captcha-thumb" class="absolute left-0 top-0 w-12 h-12 bg-blue-500 rounded-full shadow-md flex items-center justify-center text-white font-bold cursor-pointer select-none"
-                 onmousedown="startDrag(event)" ontouchstart="startDrag(event)">➜</div>
+      <!-- ====== PAGE 2: Captcha ====== -->
+      <div id="page-captcha" class="page text-center py-2">
+        <p class="text-amber-600 font-semibold text-sm mb-4">⚠️ 检测到异常注册频率</p>
+        <p class="text-gray-400 text-xs mb-4">请完成滑动拼图验证</p>
+        <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+          <div class="slide-track" id="captcha-track">
+            <div class="slide-progress" id="captcha-bar"></div>
+            <span class="slide-hint">→ 滑动滑块到最右侧 →</span>
+            <div class="slide-thumb" id="captcha-thumb" onmousedown="capStart(event)" ontouchstart="capStart(event)" style="left:0">➜</div>
           </div>
         </div>
-        <button onclick="cancelCaptcha()" class="text-gray-400 text-xs underline">跳过验证（重试普通注册）</button>
+        <p id="cap-status" class="text-xs text-gray-500">滑动完成验证</p>
       </div>
 
-      <!-- Loading -->
-      <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 rounded-3xl flex items-center justify-center z-10">
+      <!-- ====== PAGE 3: Home ====== -->
+      <div id="page-home" class="page py-2">
+        <div id="home-card" class="rounded-2xl border p-5 mb-5">
+          <div id="home-badge" class="inline-block rounded-lg px-3 py-1 text-xs font-bold uppercase mb-4"></div>
+          <h2 id="home-title" class="text-xl font-bold mb-1"></h2>
+          <p id="home-sub" class="text-sm font-medium mb-5"></p>
+          <div class="border-t border-gray-200 pt-4 space-y-2">
+            <div class="flex justify-between text-sm"><span class="text-gray-500">手机号</span><span class="font-semibold text-gray-900" id="home-phone"></span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-500">停车券</span><span class="font-semibold" id="home-coupon"></span></div>
+          </div>
+        </div>
+        <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm mb-3">退出登录</button>
+        <button onclick="goCancel()" class="w-full bg-red-50 border border-red-200 text-red-600 py-3.5 rounded-xl font-semibold text-sm">注销账号</button>
+      </div>
+
+      <!-- ====== PAGE 4: Cancel ====== -->
+      <div id="page-cancel" class="page py-2">
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
+          <p class="font-bold text-amber-700 text-sm mb-3">⚠️ 请注意</p>
+          <p class="text-amber-800 text-xs leading-relaxed mb-1">• 注销后停车券将立即失效</p>
+          <p class="text-amber-800 text-xs leading-relaxed mb-1">• 90 天内无法重新领取</p>
+          <p class="text-amber-800 text-xs leading-relaxed">• 个人信息将被合规擦除</p>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-5 text-center">
+          <p class="text-sm font-semibold text-gray-900 mb-1">当前账号</p>
+          <p id="cancel-phone" class="text-sm text-gray-500 mb-5"></p>
+          <button id="cancel-btn" onclick="doCancel()" class="w-full bg-red-600 text-white py-3.5 rounded-xl font-bold text-sm">确认注销账号</button>
+        </div>
+        <button onclick="goHome()" class="w-full border border-gray-300 text-gray-500 py-3 rounded-xl text-sm">返回</button>
+      </div>
+
+      <!-- ====== PAGE 5: Blocked ====== -->
+      <div id="page-blocked" class="page py-4 text-center">
+        <div class="w-16 h-16 bg-red-50 border-2 border-red-200 rounded-full mx-auto mb-5 flex items-center justify-center">
+          <span class="text-red-600 text-3xl font-extrabold">!</span>
+        </div>
+        <h2 class="text-xl font-bold text-red-600 mb-2">操作受限</h2>
+        <p class="text-sm text-red-800 mb-5">当前账号因触发风控策略已被系统限制</p>
+        <div class="border-t border-gray-100 pt-4 mb-4">
+          <p class="text-xs text-gray-500 font-semibold mb-2">原因说明</p>
+          <p class="text-sm text-gray-600 mb-5" id="blocked-reason"></p>
+        </div>
+        <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-5">
+          <p class="text-xs text-gray-500" id="blocked-hint">请于 90 天后重新尝试</p>
+        </div>
+        <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm">返回首页</button>
+      </div>
+
+      <!-- Loading overlay -->
+      <div id="loading" class="hidden absolute inset-0 bg-white/80 rounded-3xl flex items-center justify-center z-10">
         <div class="flex flex-col items-center gap-2">
-          <div class="w-8 h-8 border-3 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
-          <span id="loading-text" class="text-sm text-gray-500">提交中...</span>
+          <div class="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
+          <span id="loading-txt" class="text-sm text-gray-500">提交中...</span>
         </div>
       </div>
-
     </div>
 
-    <!-- Trust -->
+    <!-- Trust badge -->
     <div class="flex items-center justify-center gap-1.5 mt-5">
       <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
       <span class="text-xs text-gray-400">数据加密传输 · 隐私安全保护</span>
     </div>
-
   </div>
 
 <script>
-  const API = 'https://parking-guard-v3.abrdns.com/api/v1';
+const API = 'https://parking-guard-v3.abrdns.com/api/v1';
+let _phone = '', _name = '';
 
-  async function api(url, opts = {}) {
-    const r = await fetch(API + url, { headers: { 'Content-Type': 'application/json' }, ...opts });
-    return r.json();
-  }
+// ── Page switching ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+}
 
-  function showLoading(text = '提交中...') {
-    document.getElementById('loading-text').textContent = text;
-    document.getElementById('loading-overlay').classList.remove('hidden');
-  }
-  function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
-  }
+function showLoading(t) { document.getElementById('loading-txt').textContent = t; document.getElementById('loading').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
+function regError(m) { const e = document.getElementById('register-error'); e.textContent = m; e.classList.remove('hidden'); setTimeout(() => e.classList.add('hidden'), 4000); }
 
-  function showError(msg) {
-    const el = document.getElementById('form-error');
-    el.textContent = msg;
-    el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 4000);
-  }
+// ── Logout → Register ──
+function goRegister() {
+  localStorage.removeItem('parking_user');
+  _phone = ''; _name = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('name').value = '';
+  document.getElementById('logo-title').textContent = '停小券';
+  document.getElementById('logo-sub').textContent = '免费停车券 · 一键领取';
+  showPage('register');
+}
 
-  function resetForm() {
-    document.getElementById('form-section').classList.remove('hidden');
-    document.getElementById('success-section').classList.add('hidden');
-    document.getElementById('captcha-section').classList.add('hidden');
-    document.getElementById('phone').value = '';
-    document.getElementById('name').value = '';
-  }
+// ── Cancel page ──
+function goCancel() {
+  document.getElementById('cancel-phone').textContent = _phone;
+  showPage('cancel');
+}
 
-  function cancelCaptcha() {
-    document.getElementById('captcha-section').classList.add('hidden');
-    document.getElementById('form-section').classList.remove('hidden');
-  }
+// ── Back to Home ──
+function goHome() { showPage('home'); }
 
-  async function doRegister(captchaToken = null) {
-    const phone = document.getElementById('phone').value.trim();
-    const name = document.getElementById('name').value.trim();
+// ═══════════════ REGISTER ═══════════════
+async function handleRegister() {
+  _phone = document.getElementById('phone').value.trim();
+  _name = document.getElementById('name').value.trim();
+  if (!/^1[3-9]\d{9}$/.test(_phone)) return regError('请输入正确的11位手机号');
+  if (!_name) return regError('请输入姓名');
+  doRegister(null);
+}
 
-    if (!/^1[3-9]\d{9}$/.test(phone)) { showError('请输入正确的11位手机号'); return; }
-    if (!name) { showError('请输入姓名'); return; }
-
-    showLoading();
-
-    const endpoint = captchaToken ? '/user/verify-captcha' : '/user/register';
-    const body = captchaToken ? { phone, name, captchaToken } : { phone, name };
-
-    try {
-      const r = await fetch(API + endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      const data = await r.json();
-
-      if (data.code === 20000) {
-        document.getElementById('form-section').classList.add('hidden');
-        document.getElementById('captcha-section').classList.add('hidden');
-        document.getElementById('success-section').classList.remove('hidden');
-      } else if (data.code === 40101) {
-        document.getElementById('form-section').classList.add('hidden');
-        document.getElementById('captcha-section').classList.remove('hidden');
-      } else {
-        showError(data.message || '注册失败，请重试');
-      }
-    } catch (err) {
-      showError('网络错误，请检查连接');
-    } finally {
-      hideLoading();
-    }
-  }
-
-  function handleRegister() {
-    document.getElementById('captcha-section').classList.add('hidden');
-    doRegister();
-  }
-
-  // ── Slider Captcha ──
-  let dragging = false;
-  function startDrag(e) {
-    dragging = true;
-    document.addEventListener('mousemove', onDrag);
-    document.addEventListener('mouseup', onDragEnd);
-    document.addEventListener('touchmove', onDrag, { passive: false });
-    document.addEventListener('touchend', onDragEnd);
-    document.addEventListener('touchcancel', onDragEnd);
-    e.preventDefault();
-  }
-  function onDrag(e) {
-    if (!dragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const track = document.querySelector('.relative.h-12');
-    const trackRect = track.getBoundingClientRect();
-    const thumb = document.getElementById('captcha-thumb');
-    const maxX = trackRect.width - 48;
-    const x = Math.max(0, Math.min(clientX - trackRect.left - 24, maxX));
-    thumb.style.left = x + 'px';
-    const pct = ((x / maxX) * 100).toFixed(0);
-    document.getElementById('captcha-progress').style.width = pct + '%';
-    if (pct >= 95) {
-      onDragEnd();
-    }
-  }
-  function onDragEnd() {
-    dragging = false;
-    document.removeEventListener('mousemove', onDrag);
-    document.removeEventListener('mouseup', onDragEnd);
-    document.removeEventListener('touchmove', onDrag);
-    document.removeEventListener('touchend', onDragEnd);
-    document.removeEventListener('touchcancel', onDragEnd);
-
-    const bar = document.getElementById('captcha-progress');
-    const pct = parseFloat(bar.style.width);
-    if (pct >= 95) {
-      verifyCaptcha();
+async function doRegister(captchaToken) {
+  showLoading('提交中...');
+  const ep = captchaToken ? '/user/verify-captcha' : '/user/register';
+  const body = captchaToken ? { phone: _phone, name: _name, captchaToken } : { phone: _phone, name: _name };
+  try {
+    const r = await fetch(API + ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (d.code === 20000) {
+      const u = { phone: _phone, hasCoupon: d.data.hasCoupon ?? true, isExisting: d.data.isExisting ?? false };
+      localStorage.setItem('parking_user', JSON.stringify(u));
+      renderHome(u);
+      showPage('home');
+    } else if (d.code === 40101) {
+      showPage('captcha');
+    } else if (d.code === 40300 || d.code === 40301 || d.code === 40302) {
+      document.getElementById('blocked-reason').textContent = d.message || '检测到历史注销记录，90天内无法再次领取';
+      document.getElementById('blocked-hint').textContent = '请于 90 天后重新尝试';
+      showPage('blocked');
     } else {
-      setTimeout(() => {
-        document.getElementById('captcha-thumb').style.left = '0px';
-        bar.style.width = '0%';
-      }, 300);
+      regError(d.message || '注册失败，请重试');
     }
-  }
+  } catch { regError('网络错误，请检查连接'); }
+  hideLoading();
+}
 
-  async function verifyCaptcha() {
-    showLoading('验证中...');
-    try {
-      const r = await fetch(API + '/captcha/generate');
-      const gen = await r.json();
-      if (gen.code !== 20000) {
-        showError('验证码加载失败'); hideLoading(); return;
-      }
-      const captchaId = gen.data.captchaId;
-      const serverX = gen.data.puzzle.x;
+// ═══════════════ HOME ═══════════════
+function renderHome(u) {
+  document.getElementById('logo-title').textContent = '停小券';
+  document.getElementById('logo-sub').textContent = '停车券账户';
+  const isEx = u.isExisting;
+  const card = document.getElementById('home-card');
+  card.className = 'rounded-2xl border p-5 mb-5';
+  card.style.backgroundColor = isEx ? '#FFFBEB' : '#F0FDF4';
+  card.style.borderColor = isEx ? '#FCD34D' : '#BBF7D0';
+  const b = document.getElementById('home-badge');
+  b.style.backgroundColor = isEx ? '#FDE68A' : '#A7F3D0';
+  b.style.color = isEx ? '#D97706' : '#059669';
+  b.textContent = isEx ? '已有账户' : '新用户';
+  const t = document.getElementById('home-title');
+  t.style.color = isEx ? '#D97706' : '#059669';
+  t.textContent = isEx ? '欢迎回来' : '注册成功';
+  const s = document.getElementById('home-sub');
+  s.style.color = isEx ? '#F59E0B' : '#10B981';
+  s.textContent = isEx ? '您的停车券已领取' : '停车券已发放到您的账户';
+  document.getElementById('home-phone').textContent = u.phone;
+  document.getElementById('home-coupon').textContent = u.hasCoupon ? '正常可用' : '已失效';
+}
 
-      const vr = await fetch(API + '/captcha/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ captchaId, sliderX: serverX + 5 })
-      });
-      const vdata = await vr.json();
+// ═══════════════ CANCEL ═══════════════
+async function doCancel() {
+  if (!confirm('注销后停车券将失效，90天内无法再次领取。确定继续？')) return;
+  showLoading('注销中...');
+  try {
+    const btn = document.getElementById('cancel-btn'); btn.disabled = true; btn.textContent = '处理中...';
+    await fetch(API + '/user/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone }) });
+    localStorage.removeItem('parking_user');
+    alert('账号已注销，个人信息已完成合规擦除');
+    goRegister();
+  } catch { alert('注销失败'); }
+  hideLoading();
+}
 
-      if (vdata.code === 20000) {
-        doRegister(vdata.data.token);
-      } else {
-        document.getElementById('captcha-thumb').style.left = '0px';
-        document.getElementById('captcha-progress').style.width = '0%';
-        showError('验证失败，请重试');
-      }
-    } catch (err) {
-      showError('网络错误');
+// ═══════════════ CAPTCHA ═══════════════
+let capDragging = false, capTrackEl, capThumb, capBar, capMaxX;
+function capResolve() {
+  capTrackEl = document.getElementById('captcha-track');
+  capThumb = document.getElementById('captcha-thumb');
+  capBar = document.getElementById('captcha-bar');
+  capMaxX = capTrackEl.offsetWidth - 48;
+}
+function capStart(e) { capResolve(); capDragging = true; e.preventDefault(); }
+function capMove(e) {
+  if (!capDragging) return;
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const r = capTrackEl.getBoundingClientRect();
+  const x = Math.max(0, Math.min(cx - r.left - 24, capMaxX));
+  capThumb.style.left = x + 'px';
+  capBar.style.width = ((x / capMaxX) * 100).toFixed(0) + '%';
+  if (x >= capMaxX - 2) capEnd();
+}
+function capEnd() {
+  if (!capDragging) return;
+  capDragging = false;
+  const pct = parseFloat(capBar.style.width);
+  if (pct >= 95) verifyCaptcha();
+  else { capThumb.style.left = '0px'; capBar.style.width = '0%'; }
+}
+document.addEventListener('mousemove', capMove);
+document.addEventListener('mouseup', capEnd);
+document.addEventListener('touchmove', capMove, { passive: false });
+document.addEventListener('touchend', capEnd);
+
+async function verifyCaptcha() {
+  document.getElementById('cap-status').textContent = '验证中...';
+  try {
+    const g = await fetch(API + '/captcha/generate').then(r => r.json());
+    if (g.code !== 20000) { document.getElementById('cap-status').textContent = '验证码加载失败'; return; }
+    const v = await fetch(API + '/captcha/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ captchaId: g.data.captchaId, sliderX: g.data.puzzle.x + 5 })
+    }).then(r => r.json());
+    if (v.code === 20000) {
+      document.getElementById('cap-status').textContent = '验证通过';
+      doRegister(v.data.token);
+    } else {
+      capThumb.style.left = '0px'; capBar.style.width = '0%';
+      document.getElementById('cap-status').textContent = '验证失败，请重试';
     }
-    hideLoading();
+  } catch {
+    document.getElementById('cap-status').textContent = '网络错误';
   }
+}
+
+// ── Init: restore session ──
+(function() {
+  const u = localStorage.getItem('parking_user');
+  if (u) {
+    const parsed = JSON.parse(u);
+    _phone = parsed.phone;
+    renderHome(parsed);
+    showPage('home');
+  }
+})();
 </script>
 </body>
 </html>

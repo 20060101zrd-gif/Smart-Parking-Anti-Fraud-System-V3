@@ -297,8 +297,14 @@
 <div id="add-bl-modal" class="modal-overlay">
   <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
     <h3 class="text-lg font-bold mb-4">添加黑名单</h3>
+    <!-- 类型切换 -->
+    <div class="flex gap-1 bg-gray-100 rounded-lg p-1 mb-4" id="bl-add-type-toggle">
+      <button class="px-3 py-1.5 text-xs rounded-md font-medium bg-white shadow-sm" data-type="fp" onclick="switchBlAddType('fp')">设备指纹</button>
+      <button class="px-3 py-1.5 text-xs rounded-md font-medium text-gray-500" data-type="phone" onclick="switchBlAddType('phone')">手机号</button>
+    </div>
     <div class="space-y-3">
-      <div><label class="text-sm text-gray-600">指纹哈希</label><input type="text" id="bl-add-fp" placeholder="必填，设备/用户指纹"></div>
+      <div id="bl-add-fp-group"><label class="text-sm text-gray-600">设备指纹 / 哈希</label><input type="text" id="bl-add-fp" placeholder="输入设备指纹或哈希值"></div>
+      <div id="bl-add-phone-group" class="hidden"><label class="text-sm text-gray-600">手机号</label><input type="tel" id="bl-add-phone" maxlength="11" placeholder="输入 11 位手机号" inputmode="numeric"></div>
       <div><label class="text-sm text-gray-600">原因</label><input type="text" id="bl-add-reason" placeholder="管理员手动添加"></div>
     </div>
     <div class="flex justify-end gap-3 mt-5">
@@ -510,12 +516,28 @@ async function loadBlacklist(){
   document.getElementById('bl-info').textContent=`第${r.data.page}页 / 共${r.data.total}条`;
 }
 function blPage(d){blCurPage=Math.max(1,blCurPage+d);loadBlacklist();}
-function showAddBlacklistModal(){document.getElementById('add-bl-modal').classList.add('show')}
+let blAddType='fp';
+function switchBlAddType(type){
+  blAddType=type;
+  document.querySelectorAll('#bl-add-type-toggle button').forEach(b=>b.className=b.dataset.type===type?'px-3 py-1.5 text-xs rounded-md font-medium bg-white shadow-sm':'px-3 py-1.5 text-xs rounded-md font-medium text-gray-500');
+  document.getElementById('bl-add-fp-group').classList.toggle('hidden',type!=='fp');
+  document.getElementById('bl-add-phone-group').classList.toggle('hidden',type!=='phone');
+}
+function showAddBlacklistModal(){document.getElementById('bl-add-fp').value='';document.getElementById('bl-add-phone').value='';document.getElementById('bl-add-reason').value='';switchBlAddType('fp');document.getElementById('add-bl-modal').classList.add('show')}
 function closeAddBlModal(){document.getElementById('add-bl-modal').classList.remove('show')}
 async function doAddBlacklist(){
-  const fp=document.getElementById('bl-add-fp').value,reason=document.getElementById('bl-add-reason').value;
-  if(!fp)return toast('请填写指纹哈希',false);
-  const r=await api('/blacklist/add',{method:'POST',body:JSON.stringify({fingerprint:fp,phone_mask:'',reason})});
+  const reason=document.getElementById('bl-add-reason').value;
+  let body;
+  if(blAddType==='phone'){
+    const phone=document.getElementById('bl-add-phone').value.trim();
+    if(!/^1[3-9]\d{9}$/.test(phone))return toast('请输入正确的11位手机号',false);
+    body={phone,reason};
+  }else{
+    const fp=document.getElementById('bl-add-fp').value.trim();
+    if(!fp)return toast('请填写设备指纹',false);
+    body={fingerprint:fp,reason};
+  }
+  const r=await api('/blacklist/add',{method:'POST',body:JSON.stringify(body)});
   toast(r.message,r.code===20000);if(r.code===20000){closeAddBlModal();loadBlacklist();}
 }
 async function removeBlacklist(id,fp){
