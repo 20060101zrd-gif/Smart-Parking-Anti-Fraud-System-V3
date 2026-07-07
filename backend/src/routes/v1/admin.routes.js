@@ -73,5 +73,6 @@ router.post('/blacklist/unban-hash',     adminIpLimiter, adminController.unbanBy
 router.get('/users',                   adminIpLimiter, adminController.getUsers);
 router.get('/users/phone/:id',         adminIpLimiter, adminController.getUserPhone);
 router.post('/users/decrypt-phones',   adminIpLimiter, adminController.decryptPhones);
+router.post('/users/kick',             adminIpLimiter, adminController.kickUser);
 
 module.exports = router;

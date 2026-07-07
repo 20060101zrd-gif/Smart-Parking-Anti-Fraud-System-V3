@@ -86,6 +86,20 @@
     .badge-ok  { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
     .badge-off { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
 
+    /* 操作按钮 */
+    .reveal-btn {
+      background: transparent; border: 1px solid #91d5ff; border-radius: 4px;
+      cursor: pointer; padding: 2px 8px; font-size: 12px; margin-left: 6px;
+      color: #1890ff; transition: all 0.15s;
+    }
+    .reveal-btn:hover { background: #e6f7ff; }
+    .kick-btn {
+      padding: 4px 12px; background: #ff4d4f; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
+      transition: background 0.15s;
+    }
+    .kick-btn:hover { background: #cf1322; }
+
     /* 分页 */
     .pagination {
       display: flex; justify-content: center; align-items: center;
@@ -164,6 +178,7 @@
           <th>设备哈希（前16位）</th>
           <th>状态</th>
           <th>注册时间</th>
+          <th>操作</th>
         </tr>
       </thead>
       <tbody id="userTbody"></tbody>
@@ -181,10 +196,12 @@
   // 初始加载
   loadUsers(1);
 
+  let revealedPhones = {};
+
   async function loadUsers(page = 1, search = '') {
     currentPage = page;
     const tbody = document.getElementById('userTbody');
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">⏳ 加载中...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="loading">⏳ 加载中...</td></tr>';
 
     try {
       const params = new URLSearchParams({ page, pageSize });
@@ -197,7 +214,7 @@
 
       // 未登录 → 跳回登录页
       if (resp.status === 401 || resp.status === 403) {
-        tbody.innerHTML = '<tr><td colspan="7" class="error">⚠️ 登录已过期或无权限，请重新登录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="error">⚠️ 登录已过期或无权限，请重新登录</td></tr>';
         setTimeout(() => { window.location.href = '/index.html'; }, 2000);
         return;
       }
@@ -205,7 +222,7 @@
       const data = await resp.json();
 
       if (data.code !== 20000) {
-        tbody.innerHTML = `<tr><td colspan="7" class="error">❌ ${data.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="error">❌ ${data.message}</td></tr>`;
         renderPagination({ total: 0, page: 1, pageSize });
         return;
       }
@@ -213,26 +230,43 @@
       const { list, total } = data.data;
 
       if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty">📭 没有找到匹配的用户</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">📭 没有找到匹配的用户</td></tr>';
         renderPagination({ total: 0, page: 1, pageSize });
         return;
       }
 
-      tbody.innerHTML = list.map(u => `
+      tbody.innerHTML = list.map(u => {
+        const status = u.status === '正常' ? '正常' : '已注销';
+        const statusClass = status === '正常' ? 'badge-ok' : 'badge-off';
+        const isRevealed = !!revealedPhones[u.id];
+        const phoneText = isRevealed
+          ? `<code style="color:#52c41a;font-weight:600">${escHtml(revealedPhones[u.id])}</code>`
+          : `<code>${escHtml(u.phone)}</code>`;
+        const revealLabel = isRevealed ? '隐藏' : '显示';
+        const revealStyle = isRevealed
+          ? 'color:#8c8c8c;border-color:#d9d9d9'
+          : 'color:#1890ff;border-color:#91d5ff';
+        return `
         <tr>
           <td>${u.id}</td>
-          <td>${escapeHtml(u.name || '-')}</td>
-          <td><code>${escapeHtml(u.phone)}</code></td>
-          <td><code style="font-size:12px">${escapeHtml(u.phoneHash || '')}</code></td>
-          <td><code style="font-size:12px">${escapeHtml(u.deviceHash || '')}</code></td>
-          <td><span class="badge ${u.status === '正常' ? 'badge-ok' : 'badge-off'}">${u.status}</span></td>
+          <td>${escHtml(u.name || '-')}</td>
+          <td id="phone-cell-${u.id}">
+            ${phoneText}
+            <button class="reveal-btn" onclick="revealPhone(${u.id})" style="${revealStyle}">${revealLabel}</button>
+          </td>
+          <td><code style="font-size:12px">${escHtml(u.phoneHash || '')}</code></td>
+          <td><code style="font-size:12px">${escHtml(u.deviceHash || '')}</code></td>
+          <td><span class="badge ${statusClass}">${status}</span></td>
           <td style="font-size:12px;white-space:nowrap">${u.registeredAt || '-'}</td>
+          <td>
+            <button class="kick-btn" onclick="kickUser(${u.id})" title="踢出此用户，清除所有记录，允许重新注册领券">踢出</button>
+          </td>
         </tr>
-      `).join('');
+      `}).join('');
 
       renderPagination({ total, page, pageSize });
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="7" class="error">❌ 网络请求失败：${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="error">❌ 网络请求失败：${err.message}</td></tr>`;
     }
   }
 
@@ -295,6 +329,51 @@
     }).finally(() => {
       window.location.href = '/index.html';
     });
+  }
+
+  // ── 显示/隐藏完整手机号 ──
+  async function revealPhone(userId) {
+    if (revealedPhones[userId]) {
+      delete revealedPhones[userId];
+      loadUsers(currentPage, document.getElementById('searchInput').value.trim());
+      return;
+    }
+    try {
+      const resp = await fetch(`/api/v1/admin/users/phone/${userId}`, { credentials: 'same-origin' });
+      const d = await resp.json();
+      if (d.code === 20000) {
+        revealedPhones[userId] = d.data.phone;
+        loadUsers(currentPage, document.getElementById('searchInput').value.trim());
+      }
+    } catch {}
+  }
+
+  // ── 踢出用户 ──
+  async function kickUser(userId) {
+    if (!confirm('确定踢出该用户？踢出后该用户可重新注册领券，所有关联黑名单将被清除。')) return;
+    try {
+      const resp = await fetch('/api/v1/admin/users/kick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ id: userId })
+      });
+      const d = await resp.json();
+      if (d.code === 20000) {
+        alert(d.message);
+        loadUsers(currentPage, document.getElementById('searchInput').value.trim());
+      } else {
+        alert(d.message || '操作失败');
+      }
+    } catch {
+      alert('网络错误');
+    }
+  }
+
+  function escHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
   }
 
   // 回车搜索

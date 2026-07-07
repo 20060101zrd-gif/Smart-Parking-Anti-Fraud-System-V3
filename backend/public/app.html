@@ -138,7 +138,7 @@
   </div>
 
 <script>
-const API = 'https://parking-guard-v3.abrdns.com/api/v1';
+const API = window.location.origin + '/api/v1';
 let _phone = '', _name = '';
 
 // ── Page switching ──
@@ -193,6 +193,7 @@ async function doRegister(captchaToken) {
       renderHome(u);
       showPage('home');
     } else if (d.code === 40101) {
+      resetCaptcha();
       showPage('captcha');
     } else if (d.code === 40300 || d.code === 40301 || d.code === 40302) {
       document.getElementById('blocked-reason').textContent = d.message || '检测到历史注销记录，90天内无法再次领取';
@@ -229,18 +230,48 @@ function renderHome(u) {
 }
 
 // ═══════════════ CANCEL ═══════════════
-function showCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.remove('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'flex'; }
+function resetCaptcha() {
+    const thumb = document.getElementById('captcha-thumb');
+    const bar = document.getElementById('captcha-bar');
+    if (thumb) thumb.style.left = '0px';
+    if (bar) bar.style.width = '0%';
+    document.getElementById('cap-status').textContent = '滑动完成验证';
+    capDragging = false;
+  }
+  function showCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.remove('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'flex'; }
 function hideCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.add('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'none'; }
+function resetCancelBtn() { const btn = document.getElementById('cancel-btn'); btn.disabled = false; btn.textContent = '确认注销账号'; }
+function resetCaptcha() {
+  const thumb = document.getElementById('captcha-thumb');
+  const bar = document.getElementById('captcha-bar');
+  if (thumb) thumb.style.left = '0px';
+  if (bar) bar.style.width = '0%';
+  document.getElementById('cap-status').textContent = '滑动完成验证';
+  capDragging = false;
+}
 async function doCancel() {
-  showLoading('注销中...');
   hideCancelConfirm();
+  showLoading('注销中...');
+  const btn = document.getElementById('cancel-btn'); btn.disabled = true; btn.textContent = '处理中...';
   try {
-    const btn = document.getElementById('cancel-btn'); btn.disabled = true; btn.textContent = '处理中...';
-    await fetch(API + '/user/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone }) });
-    localStorage.removeItem('parking_user');
-    alert('账号已注销，个人信息已完成合规擦除');
-    goRegister();
-  } catch { alert('注销失败'); }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const r = await fetch(API + '/user/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone }), signal: controller.signal });
+    clearTimeout(timeout);
+    const data = await r.json();
+    if (data.code === 20000) {
+      localStorage.removeItem('parking_user');
+      alert('账号已注销，个人信息已完成合规擦除');
+      goRegister();
+    } else {
+      alert(data.message || '注销失败');
+      resetCancelBtn();
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') alert('请求超时，请重试');
+    else alert('网络错误，请检查连接');
+    resetCancelBtn();
+  }
   hideLoading();
 }
 

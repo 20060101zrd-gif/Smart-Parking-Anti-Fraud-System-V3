@@ -1017,6 +1017,43 @@ class AdminController {
     } catch (err) { next(err); }
   }
 
+  // 🆕 踢出用户：删除 sys_users + 清理关联黑名单，允许重新注册领券
+  async kickUser(req, res, next) {
+    try {
+      const id = parseInt(req.body.id);
+      if (!id) return fail(res, 400, 40000, '无效的用户ID');
+      const row = await db.get('SELECT phone, phone_hash, device_hash FROM sys_users WHERE id = ?', [id]);
+      if (!row) return fail(res, 404, 40400, '用户不存在');
+
+      const plainPhone = encryption.decrypt(row.phone);
+      const phoneHash = row.phone_hash || '';
+
+      // 1. 删除用户记录
+      await db.run('DELETE FROM sys_users WHERE id = ?', [id]);
+
+      // 2. 清理黑名单（如果有）
+      if (phoneHash) {
+        await db.run('DELETE FROM phone_blacklist_map WHERE phone_hash = ?', [phoneHash]).catch(() => {});
+        await db.run('DELETE FROM risk_hash_archives WHERE phone_hash = ?', [phoneHash]).catch(() => {});
+        await db.run('DELETE FROM sys_blacklist WHERE phone_hash = ?', [phoneHash]).catch(() => {});
+      }
+      if (row.device_hash) {
+        await db.run('DELETE FROM sys_blacklist WHERE device_fingerprint = ?', [row.device_hash]).catch(() => {});
+        await db.run('DELETE FROM risk_hash_archives WHERE fingerprint = ?', [row.device_hash]).catch(() => {});
+      }
+
+      // 3. 清理 Redis 黑名单缓存 + 注册标记
+      try {
+        if (phoneHash) await redisClient.del(`risk:hash_bl:${phoneHash}`);
+        if (row.device_hash) await redisClient.del(`risk:dev_bl:${row.device_hash}`);
+        if (plainPhone) await redisClient.del(`user:registered:${plainPhone}`);
+      } catch {}
+
+      auditService.logAction(req.admin.adminId, 'KICK_USER', `id=${id} phone=${plainPhone.substring(0,3)}****${plainPhone.substring(7)}`, req.ip);
+      return success(res, { id, phone: plainPhone.substring(0,3) + '****' + plainPhone.substring(7) }, '用户已踢出，可重新注册领券');
+    } catch (err) { next(err); }
+  }
+
 }
 
 

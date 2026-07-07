@@ -51,7 +51,9 @@ async function bootstrap() {
     app.listen(env.PORT,'0.0.0.0', () => {
       console.log(`\n🎉 [Server] 核心后端服务启动成功!`);
       console.log(`📡 [Server] 本地访问地址: http://localhost:${env.PORT}`);
-      console.log(`🛡️  [Server] 管理面板直达: http://localhost:${env.PORT}/index.html\n`);
+      console.log(`🛡️  [Server] 管理面板:     http://localhost:${env.PORT}/index.html`);
+      console.log(`📱 [Server] 手机注册页:   http://localhost:${env.PORT}/app.html`);
+      console.log(`👥 [Server] 用户管理:     http://localhost:${env.PORT}/users.html\n`);
     });
 
   } catch (error) {

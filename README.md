@@ -100,59 +100,59 @@
 |:---:|:---:|:---:|
 | ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
 
-| 注销确认 | 风控拦截 | 滑块验证 |
-|:---:|:---:|:---:|
-| ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) |
+| 注销确认 | 风控拦截 | 滑块验证 | 验证通过 |
+|:---:|:---:|:---:|:---:|
+| ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-captcha-verified.jpg) |
+
+**网页版** — 扫码即用，无需安装 App
+
+![](screenshots/b-app-register.png)
 
 ### B 端（管理后台）
 
-**安全登录** -- Argon2id 密码校验 + RS256 JWT
+**安全登录** — Argon2id 密码校验 + RS256 JWT
 
 ![](screenshots/b-admin-login.png)
 
-**风控监控大盘** -- 实时拦截趋势、用户统计、黑名单数
+**风控监控大盘** — 实时拦截趋势、用户统计、黑名单数
 
 ![](screenshots/b-admin-dashboard.png)
 
-**拦截日志** -- 每条拦截的 IP、设备哈希、原因、风险等级
-
-![](screenshots/b-intercept-logs.png)
-
-**黑名单管理** -- 支持手机号搜索、手动添加、解封
-
-![](screenshots/b-blacklist.png)
-
-**白名单管理** -- 免检 VIP 通道
-
-![](screenshots/b-whitelist.png)
-
-**规则配置** -- 在线调整限流阈值、黑名单天数
+**风控规则配置** — 在线调整限流阈值、黑名单天数
 
 ![](screenshots/b-rules-config.png)
 
-**用户管理（脱敏）** -- 手机号 AES 解密后脱敏显示，操作列「显示」按钮
+**黑名单管理** — 支持手机号搜索、手动添加、解封
 
-![](screenshots/b-users-list.png)
+![](screenshots/b-blacklist.png)
 
-**用户管理（明文）** -- 点击后显示绿色完整明文，按钮切换为「隐藏」
+**拦截日志** — 每条拦截的 IP、设备哈希、原因、风险等级
 
-![](screenshots/b-users-revealed.png)
+![](screenshots/b-intercept-logs.png)
+
+**白名单管理** — 免检 VIP 通道
+
+![](screenshots/b-whitelist.png)
+
+**用户管理** — 透明蓝框显示/隐藏手机号，踢出功能
+
+![](screenshots/b-users-management.png)
 
 ### 基础设施
 
-**Docker 容器** -- 三个服务（backend / redis / mysql）全部运行中
+**Docker 容器** — 三个服务（backend / redis / mysql）全部运行中
 
 ![](screenshots/infra-docker.png)
 
-**Redis 黑名单 Key** -- 缓存中的风控黑名单
+**Redis 黑名单 Key** — 缓存中的风控黑名单
 
 ![](screenshots/infra-redis.png)
 
-**MySQL 用户表（密文）** -- `phone` 列为 AES-256-CBC 密文，非明文
+**MySQL 用户表（密文）** — `phone` 列为 AES-256-CBC 密文，非明文
 
 ![](screenshots/infra-mysql-users.png)
 
-**MySQL 拦截日志** -- 拦截原因、风险等级、时间戳
+**MySQL 拦截日志** — 拦截原因、风险等级、时间戳
 
 ![](screenshots/infra-mysql-logs.png)
 

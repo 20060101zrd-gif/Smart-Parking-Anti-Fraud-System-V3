@@ -18,11 +18,11 @@
     th{text-align:left;padding:10px 12px;font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e5e7eb}
     td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f3f4f6}
     tr:hover td{background:#f9fafb}
-    .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .2s}
-    .btn-primary{background:#2563eb;color:#fff}
-    .btn-primary:hover{background:#1d4ed8}
-    .btn-danger{background:#ef4444;color:#fff}
-    .btn-danger:hover{background:#dc2626}
+    .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .2s;background:transparent}
+    .btn-primary{background:transparent;color:#2563eb;border-color:#93c5fd}
+    .btn-primary:hover{background:#eff6ff;border-color:#2563eb}
+    .btn-danger{background:transparent;color:#ef4444;border-color:#fca5a5}
+    .btn-danger:hover{background:#fef2f2;border-color:#ef4444}
     .btn-sm{padding:4px 10px;font-size:12px}
     input[type=text],input[type=password],input[type=number],input[type=date],select{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box}
     input:focus,select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
@@ -709,21 +709,23 @@ async function loadUsers(page){
   document.getElementById('users-tbody').innerHTML=d.list.map(u=>{
     const statusClass=u.status==='正常'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700';
     const revealed=usersRevealed[u.id]||'';
-    const phoneCell=revealed
-      ? `<span class="font-mono text-xs text-green-700">${revealed}</span>`
+    const phoneDisplay=revealed
+      ? `<span class="font-mono text-xs text-green-700 font-semibold">${revealed}</span>`
       : `<span class="font-mono text-xs">${u.phone}</span>`;
-    const actionBtn=revealed
-      ? `<button class="btn btn-sm text-xs text-gray-400 border-gray-200 hover:bg-gray-50" onclick="hidePhone(${u.id})">隐藏</button>`
-      : `<button class="btn btn-sm text-xs text-blue-500 border-blue-200 hover:bg-blue-50" onclick="revealPhone(${u.id},this)">显示</button>`;
+    const toggleBtn=revealed
+      ? `<button class="btn btn-sm text-xs text-gray-500 border-gray-200 hover:bg-gray-50" onclick="togglePhone(${u.id})">隐藏</button>`
+      : `<button class="btn btn-sm text-xs text-blue-500 border-blue-200 hover:bg-blue-50" onclick="togglePhone(${u.id})">显示</button>`;
     return `<tr>
       <td class="text-xs text-gray-500">${u.id}</td>
       <td class="text-sm font-medium">${u.name||'-'}</td>
-      <td>${phoneCell}</td>
+      <td>${phoneDisplay} ${toggleBtn}</td>
       <td class="font-mono text-xs text-gray-400 hidden lg:table-cell">${u.phoneHash||'--'}</td>
       <td class="font-mono text-xs text-gray-400 hidden lg:table-cell">${u.deviceHash||'--'}</td>
       <td><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${statusClass}">${u.status}</span></td>
       <td class="text-xs text-gray-500 whitespace-nowrap">${u.registeredAt||'-'}</td>
-      <td>${actionBtn}</td>
+      <td>
+        <button class="btn btn-danger btn-sm text-xs" onclick="kickUser(${u.id})" title="踢出此用户，清除所有记录，允许重新注册领券">踢出</button>
+      </td>
     </tr>`;
   }).join('');
 
@@ -735,17 +737,26 @@ async function loadUsers(page){
   updateRevealAllBtn();
 }
 
-async function revealPhone(userId, btnEl){
-  if(usersRevealed[userId]) return;
-  if(btnEl)btnEl.disabled=true;
+async function togglePhone(userId){
+  if(usersRevealed[userId]){
+    delete usersRevealed[userId];
+    loadUsers(usersCurPage);
+    return;
+  }
   const r=await api(`/users/phone/${userId}`);
   if(r.code===20000){
     usersRevealed[userId]=r.data.phone;
     loadUsers(usersCurPage);
   }else{
-    if(btnEl)btnEl.disabled=false;
     toast(r.message||'解密失败',false);
   }
+}
+
+async function kickUser(userId){
+  if(!confirm('确定踢出该用户？踢出后该用户可重新注册领券，所有关联黑名单将被清除。'))return;
+  const r=await api('/users/kick',{method:'POST',body:JSON.stringify({id:userId})});
+  toast(r.message,r.code===20000);
+  if(r.code===20000)loadUsers(usersCurPage);
 }
 
 function hidePhone(userId){

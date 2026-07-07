@@ -75,11 +75,17 @@ class UserController {
       if (ip && ip.startsWith('::ffff:')) ip = ip.slice(7);
       if (ip === '::1') ip = '127.0.0.1';
 
-      // 🚀 将 ip 和 deviceId 传给服务层，激活滑动窗口限流防线 + 设备指纹拉黑
-      await riskService.cancelAccount(phone, ip, deviceId);
+      // 🚀 加 15 秒超时防止 Argon2id 计算导致请求悬挂
+      const result = await Promise.race([
+        riskService.cancelAccount(phone, ip, deviceId),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('CANCEL_TIMEOUT')), 15000))
+      ]);
 
       return success(res, { success: true }, '账号已注销，个人信息已完成合规擦除');
     } catch (err) {
+      if (err.message === 'CANCEL_TIMEOUT') {
+        return fail(res, 504, 50400, '注销请求超时，请稍后重试');
+      }
       next(err);
     }
   }
