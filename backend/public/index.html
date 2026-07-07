@@ -303,9 +303,9 @@
       <button class="px-3 py-1.5 text-xs rounded-md font-medium text-gray-500" data-type="phone" onclick="switchBlAddType('phone')">手机号</button>
     </div>
     <div class="space-y-3">
-      <div id="bl-add-fp-group"><label class="text-sm text-gray-600">设备指纹 / 哈希</label><input type="text" id="bl-add-fp" placeholder="输入设备指纹或哈希值"></div>
-      <div id="bl-add-phone-group" class="hidden"><label class="text-sm text-gray-600">手机号</label><input type="tel" id="bl-add-phone" maxlength="11" placeholder="输入 11 位手机号" inputmode="numeric"></div>
-      <div><label class="text-sm text-gray-600">原因</label><input type="text" id="bl-add-reason" placeholder="管理员手动添加"></div>
+      <div id="bl-add-fp-group"><label class="block text-sm text-gray-600 mb-1">设备指纹 / 哈希</label><input type="text" id="bl-add-fp" placeholder="输入设备指纹或哈希值" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></div>
+      <div id="bl-add-phone-group" class="hidden"><label class="block text-sm text-gray-600 mb-1">手机号</label><input type="tel" id="bl-add-phone" maxlength="11" placeholder="输入 11 位手机号" inputmode="numeric" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></div>
+      <div><label class="block text-sm text-gray-600 mb-1">原因</label><input type="text" id="bl-add-reason" placeholder="管理员手动添加" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"></div>
     </div>
     <div class="flex justify-end gap-3 mt-5">
       <button class="btn btn-sm" onclick="closeAddBlModal()">取消</button>

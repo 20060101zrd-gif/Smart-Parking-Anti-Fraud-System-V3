@@ -21,9 +21,7 @@
 
     <!-- Logo (shared) -->
     <div id="logo" class="text-center mb-8">
-      <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-blue-200">
-        <span class="text-white text-3xl font-bold">P</span>
-      </div>
+      <img src="assets/icon.jpg" alt="停小券" class="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-lg shadow-blue-200 object-cover">
       <h1 id="logo-title" class="text-2xl font-extrabold text-gray-900">停小券</h1>
       <p id="logo-sub" class="text-sm text-gray-500 mt-1">免费停车券 · 一键领取</p>
     </div>
@@ -88,13 +86,23 @@
           <p class="text-amber-800 text-xs leading-relaxed mb-1">• 90 天内无法重新领取</p>
           <p class="text-amber-800 text-xs leading-relaxed">• 个人信息将被合规擦除</p>
         </div>
-        <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-5 text-center">
-          <p class="text-sm font-semibold text-gray-900 mb-1">当前账号</p>
-          <p id="cancel-phone" class="text-sm text-gray-500 mb-5"></p>
-          <button id="cancel-btn" onclick="doCancel()" class="w-full bg-red-600 text-white py-3.5 rounded-xl font-bold text-sm">确认注销账号</button>
-        </div>
-        <button onclick="goHome()" class="w-full border border-gray-300 text-gray-500 py-3 rounded-xl text-sm">返回</button>
+      <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-5 text-center">
+        <p class="text-sm font-semibold text-gray-900 mb-1">当前账号</p>
+        <p id="cancel-phone" class="text-sm text-gray-500 mb-5"></p>
+        <button id="cancel-btn" onclick="showCancelConfirm()" class="w-full bg-red-600 text-white py-3.5 rounded-xl font-bold text-sm">确认注销账号</button>
       </div>
+      <button onclick="goHome()" class="w-full border border-gray-300 text-gray-500 py-3 rounded-xl text-sm">返回</button>
+    </div>
+
+    <!-- Cancel Confirm Modal -->
+    <div id="cancel-confirm-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-6">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-xs">
+        <p class="font-bold text-gray-900 mb-2">确认注销？</p>
+        <p class="text-sm text-gray-500 mb-5">注销后停车券将失效，90 天内无法再次领取。</p>
+        <button onclick="doCancel()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm mb-2">确定注销</button>
+        <button onclick="hideCancelConfirm()" class="w-full border border-gray-300 text-gray-500 py-3 rounded-xl text-sm">取消</button>
+      </div>
+    </div>
 
       <!-- ====== PAGE 5: Blocked ====== -->
       <div id="page-blocked" class="page py-4 text-center">
@@ -221,9 +229,11 @@ function renderHome(u) {
 }
 
 // ═══════════════ CANCEL ═══════════════
+function showCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.remove('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'flex'; }
+function hideCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.add('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'none'; }
 async function doCancel() {
-  if (!confirm('注销后停车券将失效，90天内无法再次领取。确定继续？')) return;
   showLoading('注销中...');
+  hideCancelConfirm();
   try {
     const btn = document.getElementById('cancel-btn'); btn.disabled = true; btn.textContent = '处理中...';
     await fetch(API + '/user/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone }) });
