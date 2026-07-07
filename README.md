@@ -295,6 +295,22 @@ cd tests && npm install && node index.js    # 一键运行全部测试
 
 ---
 
+## 代码规范
+
+项目配备 ESLint + Prettier 统一代码风格与格式：
+
+```bash
+# 代码检查
+npx eslint backend/src/ mobile/src/
+
+# 自动格式化
+npx prettier --write backend/src/ mobile/src/
+```
+
+规则包括：禁止 `var`、强制 `===`、单引号、尾逗号、2 空格缩进、100 字符行宽等。
+
+---
+
 ## 快速启动
 
 ### 1. 克隆并配置
