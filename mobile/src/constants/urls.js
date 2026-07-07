@@ -24,7 +24,7 @@ function extractHost() {
 }
 
 function getBaseUrl() {
-  if (!__DEV__) return 'https://your-production-api.com/api/v1';
+  if (!__DEV__) return 'https://parking-guard-v3.abrdns.com/api/v1';
 
   // 1. 自动检测 LAN IP（WiFi 模式生效）
   const host = extractHost();
