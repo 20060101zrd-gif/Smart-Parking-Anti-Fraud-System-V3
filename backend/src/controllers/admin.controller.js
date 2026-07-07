@@ -487,7 +487,13 @@ class AdminController {
       }
 
       if (!deviceHash) {
-        return fail(res, 404, 40400, '未找到该手机号关联的设备哈希，用户可能尚未注册或已被彻底清除');
+        // 🆕 未找到设备 → 使用 phoneHash 作为标识记录白名单（后续注册时设备绑定后生效）
+        const placeholder = 'PHONE:' + phoneHash.substring(0, 32);
+        await whitelistService.addDevice(placeholder, remark || '通过手机号添加', req.admin?.adminId);
+        auditService.logAction(req.admin.adminId, 'ADD_WHITELIST_BY_PHONE',
+          `phone→${phone.substring(0,3)}****${phone.substring(7)} (未注册/已清除)`, req.ip);
+        return success(res, { phone: phone.substring(0,3) + '****' + phone.substring(7), deviceHash: placeholder },
+          '手机号白名单已记录，设备将在注册后自动绑定');
       }
 
       // 3. 加入白名单

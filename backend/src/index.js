@@ -37,8 +37,18 @@ async function bootstrap() {
     auditQueue.start();//确保高危操作日志能每2秒批量落盘
     interceptLogQueue.start();//🆕 风控拦截日志每2秒异步刷盘
     
+    // 3.5 全局请求超时兜底（15 秒无响应强制中断）
+    app.use((req, res, next) => {
+      const timer = setTimeout(() => {
+        if (!res.headersSent) {
+          res.status(504).json({ code: 50400, message: '服务器处理超时，请稍后重试' });
+        }
+      }, 15000);
+      res.on('finish', () => clearTimeout(timer));
+      next();
+    });
+
     // 4. 挂载前端静态资源 (Web 管理面板)
-    // 映射根目录 public 文件夹，消灭跨域问题
     app.use(express.static(path.join(__dirname, '../public')));
 
     // 5. 挂载 API 路由 (暂留空，后续叠加)
