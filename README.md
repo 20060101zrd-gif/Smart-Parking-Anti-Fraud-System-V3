@@ -104,10 +104,6 @@
 |:---:|:---:|:---:|:---:|
 | ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-captcha-verified.jpg) |
 
-**网页版** — 扫码即用，无需安装 App
-
-![](screenshots/b-app-register.png)
-
 ### B 端（管理后台）
 
 **安全登录** — Argon2id 密码校验 + RS256 JWT
