@@ -204,9 +204,10 @@ class RiskService {
       }
     }
 
-    // 2. 生成基于 Argon2id 的不可逆持久化指纹 + SHA256 phone_hash
-    const rawFactor = CryptoUtil.buildUserFactor(phone);
-    const fingerprint = await CryptoUtil.generateHash(rawFactor);
+    // 2. 生成快速 SHA-256 持久化指纹（避免 Argon2id 阻塞事件循环）
+    const crypto = require('crypto');
+    const factor = CryptoUtil.buildUserFactor(phone, deviceId || '');
+    const fingerprint = crypto.createHash('sha256').update(factor).digest('hex');
     const phoneHash = encryption.hashPhone(phone);
     const expireDate = new Date(Date.now() + this.BLACKLIST_TTL_SECONDS * 1000).toISOString().slice(0, 19).replace('T', ' ');
     

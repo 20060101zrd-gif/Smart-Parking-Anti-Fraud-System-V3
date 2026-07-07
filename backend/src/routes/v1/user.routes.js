@@ -51,7 +51,6 @@ router.post(
 router.post(
   '/cancel',
   globalIpLimiter,
-  phoneLimiter,
   userController.cancel
 );
 
