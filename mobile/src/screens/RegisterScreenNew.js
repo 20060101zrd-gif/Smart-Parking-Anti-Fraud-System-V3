@@ -257,12 +257,12 @@ export default function RegisterScreenNew() {
         </KeyboardAvoidingView>
       </LinearGradient>
 
-      {/* ── Captcha Modal ── */}
+      {/* ── Captcha Modal (Android 返回键不可关闭) ── */}
       <Modal
         visible={showCaptcha}
         transparent
         animationType="fade"
-        onRequestClose={() => {}}   {/* Android 返回键不可关闭 */}
+        onRequestClose={() => {}}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

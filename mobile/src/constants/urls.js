@@ -24,20 +24,8 @@ function extractHost() {
 }
 
 function getBaseUrl() {
-  if (!__DEV__) return 'https://parking-guard-v3.abrdns.com/api/v1';
-
-  // 1. 自动检测 LAN IP（WiFi 模式生效）
-  const host = extractHost();
-  if (host) return `http://${host}:3000/api/v1`;
-
-  // 2. 手动配置（WiFi IP 变了改这里 / app.json 的 devApiHost）
-  const manifestExtra = NativeModules.ExponentConstants?.manifest?.extra;
-  const devHost = manifestExtra?.devApiHost || '192.168.16.76';
-  if (devHost) return `http://${devHost}:3000/api/v1`;
-
-  // 3. 模拟器 fallback
-  if (Platform.OS === 'android') return 'http://10.0.2.2:3000/api/v1';
-  return 'http://127.0.0.1:3000/api/v1';
+  // 强制使用生产服务器（生成 QR 码给别人扫）
+  return 'https://parking-guard-v3.abrdns.com/api/v1';
 }
 
 export const BASE_URL = getBaseUrl();
