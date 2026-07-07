@@ -39,7 +39,7 @@
       | 通过
       v
 [第二道：设备黑名单]
-注销时生成不可逆设备指纹，拉入 90 天黑名单
+注销时生成设备指纹哈希（SHA-256），拉入 90 天黑名单
 --> 同一部手机换号也无法重新注册（40301）
       | 通过
       v
@@ -100,9 +100,9 @@
 |:---:|:---:|:---:|
 | ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
 
-| 注销确认 | 风控拦截 | 滑块验证 | 验证通过 |
-|:---:|:---:|:---:|:---:|
-| ![](screenshots/c-cancel-confirm.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-captcha-verified.jpg) |
+| 滑块验证 | 风控拦截 | 注销确认 |
+|:---:|:---:|:---:|
+| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ⏳ 待补充 |
 
 ### B 端（管理后台）
 
@@ -196,6 +196,8 @@
 ### 管理员密码：Argon2id（慢速哈希）
 
 管理后台的登录密码用 Argon2id 保存。这是一种故意设计得「又慢又吃内存」的哈希算法——每次计算消耗 16MB 内存，耗时 50-100ms。对正常管理员来说登录无感，但如果攻击者拿到数据库想用显卡暴力破解，每秒只能试十几次，而普通 SHA256 一秒能算几亿次。**用途**：即便数据库完全泄露，攻击者也几乎不可能从哈希值反推出原始密码。
+
+> ⚡ 注销操作用 SHA-256 替代 Argon2id 生成归档指纹，避免单核服务器上阻塞 Node.js 事件循环导致后续请求排队。一线拦截仍靠 `phone_blacklist_map`（SHA256 hash 匹配），安全性无影响。
 
 ### 登录凭证：RS256 JWT
 
