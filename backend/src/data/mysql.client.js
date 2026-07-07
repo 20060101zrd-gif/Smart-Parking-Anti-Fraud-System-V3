@@ -21,7 +21,7 @@ class MySQLClient {
       charset: 'utf8mb4',
       // 连接池参数
       waitForConnections: true,
-      connectionLimit: 20,
+      connectionLimit: 5,
       queueLimit: 0,
       connectTimeout: 3000,
       enableKeepAlive: true,

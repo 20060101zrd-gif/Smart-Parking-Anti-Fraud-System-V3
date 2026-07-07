@@ -141,7 +141,8 @@ export default function RegisterScreenNew() {
   }
 
   const handleCaptchaCancel = () => {
-    setShowCaptcha(false)
+    // 验证码不可跳过，不做任何操作
+    // 用户只能完成滑块验证或等待过期
   }
 
   // ── Render Helpers ────────────────────────────────────
@@ -261,7 +262,7 @@ export default function RegisterScreenNew() {
         visible={showCaptcha}
         transparent
         animationType="fade"
-        onRequestClose={handleCaptchaCancel}
+        onRequestClose={() => {}}   {/* Android 返回键不可关闭 */}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -272,15 +273,7 @@ export default function RegisterScreenNew() {
 
             <SliderCaptcha
               onVerify={handleCaptchaVerify}
-              onCancel={handleCaptchaCancel}
             />
-
-            <TouchableOpacity
-              style={styles.modalCloseBtn}
-              onPress={handleCaptchaCancel}
-            >
-              <Text style={styles.modalCloseText}>关闭</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
