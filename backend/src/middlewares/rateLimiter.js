@@ -139,11 +139,10 @@ const rateLimiter = (type) => {
     }
 
     try {
-      const fullKey = `${redisClient.prefix}${key}`;
-      const current = await redisClient.client.incr(fullKey);
+      const current = await redisClient.incr(key);
 
       if (current === 1) {
-        await redisClient.client.expire(fullKey, windowSeconds);
+        await redisClient.expire(key, windowSeconds);
       }
 
       if (current > limit) {

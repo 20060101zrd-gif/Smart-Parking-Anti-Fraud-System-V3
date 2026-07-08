@@ -37,7 +37,7 @@ services:
       - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
       - redis_data:/data
     command: redis-server /usr/local/etc/redis/redis.conf
-    mem_limit: 128m
+    mem_limit: 256m
     restart: always
 
   mysql:

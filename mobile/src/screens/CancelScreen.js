@@ -28,7 +28,10 @@ export default function CancelScreen() {
         onPress: async () => {
           setLoading(true)
           try {
-            await client.post('/user/cancel', { phone: userInfo?.phone })
+            await Promise.race([
+              client.post('/user/cancel', { phone: userInfo?.phone }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('请求超时，请重试')), 15000))
+            ])
             await storage.removeItem('user_info')
             navigate('RegisterScreen')
             Alert.alert('已注销', '账号信息已完成合规擦除')

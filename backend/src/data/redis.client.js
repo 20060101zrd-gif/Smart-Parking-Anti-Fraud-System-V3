@@ -21,6 +21,7 @@ class RedisWrapper {
     this.isReady = false; // 降级标识：标记当前 Redis 是否可用
     this.prefix = 'pf:';  // 强制的命名空间前缀
     this._reconnectTimer = null;
+    this._memDelSet = new Set(); // 内存降级删除标记（Redis 不可用时记录已删除的 key）
     
     this._bindEvents();
   }
@@ -140,16 +141,19 @@ class RedisWrapper {
   }
 
   async get(key) {
+    if (this._memDelSet.has(key)) return null; // 内存标记优先：该 key 已被 del() 清理过
     if (!this.isReady) return null;
     const fullKey = `${this.prefix}${key}`;
     return this._withTimeout(this.client.get(fullKey), null);
   }
 
   async del(key) {
+    this._memDelSet.add(key); // 内存标记：即使 Redis 不可用也记录删除意图
     if (!this.isReady) return false;
     const fullKey = `${this.prefix}${key}`;
     try {
       const result = await this._withTimeout(this.client.del(fullKey), false);
+      if (result !== false) this._memDelSet.delete(key); // Redis 删除成功，清理内存标记
       return result !== false;
     } catch (e) {
       return false;
