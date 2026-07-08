@@ -47,12 +47,13 @@ class RiskService {
    * @param {String} deviceId 设备指纹（可选）
    * @param {String} ip       客户端IP（可选）
    */
-  async checkAndRegister(phone, name, deviceId, ip) {
+  async checkAndRegister(phone, name, deviceId, ip, req = {}) {
     // ═══════════════════════════════════════════════
-    // ⬜ 白名单放行：跳过所有黑名单、设备指纹校验
+    // ⬜ 白名单放行：优先读取 rateLimiter 中间件已缓存的结果，避免重复 Redis 查询
     // ═══════════════════════════════════════════════
-    if (await whitelistService.isWhitelisted(ip, deviceId)) {
-      console.log(`[RiskService] ⬜ 白名单放行 ip=${ip} deviceId=${(deviceId || '').substring(0, 12)}...`);
+    const isWhitelisted = req._isWhitelisted === true || await whitelistService.isWhitelisted(ip, deviceId);
+    if (isWhitelisted) {
+      logger.debug({ ip, deviceId: (deviceId || '').substring(0, 12) }, '白名单放行');
       // 直接走正常注册流程
       const registeredKey = `user:registered:${phone}`;
       const isRegistered = await redisClient.get(registeredKey);
@@ -122,28 +123,21 @@ class RiskService {
     // 🟢 低风险：无异常特征，正常执行注册/领券业务
     //    注：IP维度频控已移至 rateLimiter('reg_ip') 中间件处理
     // ═══════════════════════════════════════════════
-    console.log('[RiskService] 低风险放行 → 设备指纹与手机号均无异常特征');
+    logger.debug('低风险放行 → 设备指纹与手机号均无异常特征');
 
-    // ========== 检查是否已注册 ==========
+    // 检查是否已注册（Redis 缓存命中则直接返回）
     const registeredKey = `user:registered:${phone}`;
     const isRegistered = await redisClient.get(registeredKey);
-    console.log('[调试] 查已注册标记 -> key:', registeredKey, '值:', isRegistered);
 
     if (isRegistered) {
-      console.log('[调试] 命中已注册缓存，直接返回');
       return { hasCoupon: true, isExisting: true };
     }
-    // ========== 新增结束 ==========
 
-    // 未命中黑名单，执行常规业务逻辑...
+    // 未命中黑名单，执行常规业务逻辑
     const mockUserId = Math.floor(Math.random() * 100000);
 
-    // ========== 注册成功后标记已注册 ==========
-    const setResult = await redisClient.set(registeredKey, '1', 30 * 24 * 60 * 60);
-    console.log('[调试] 写入注册标记 -> key:', registeredKey, 'set返回:', setResult);
-    const verifyValue = await redisClient.get(registeredKey);
-    console.log('[调试] 写完立刻回读验证 -> 值:', verifyValue);
-    // ========== 新增结束 ==========
+    // 注册成功后标记已注册（30天过期）
+    await redisClient.set(registeredKey, '1', 30 * 24 * 60 * 60);
 
     // 🆕 异步写入 MySQL 用户表（手机号 AES 加密 + SHA256 哈希）
     try {
@@ -154,7 +148,7 @@ class RiskService {
          VALUES (?, ?, ?, ?, 1)`,
         [encryptedPhone, phoneHash, deviceId || '', name]
       );
-      console.log(`[RiskService] 用户 ${phoneHash.substring(0, 8)}... 已写入 MySQL`);
+      logger.debug({ phoneHash: phoneHash.substring(0, 8) }, '用户已写入 MySQL');
     } catch (err) {
       console.error('[RiskService] MySQL 写入用户失败（不影响注册主流程）:', err.message);
     }

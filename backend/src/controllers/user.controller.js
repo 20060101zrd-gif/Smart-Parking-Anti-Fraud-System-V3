@@ -22,7 +22,7 @@ class UserController {
       if (ip === '::1') ip = '127.0.0.1';
 
       // 2. 调用服务层执行风控检测与发券逻辑（IP频控已由 rateLimiter('reg_ip') 中间件前置拦截）
-      const result = await riskService.checkAndRegister(phone, name, deviceId, ip);
+      const result = await riskService.checkAndRegister(phone, name, deviceId, ip, req);
 
       // 3. 返回发券成功响应
       return success(res, result, '注册校验通过，已成功发放停车券');
@@ -55,7 +55,7 @@ class UserController {
       }
 
       // captchaToken 已由 captchaToken 中间件校验并消耗，此处直接执行业务
-      const result = await riskService.checkAndRegister(phone, name, deviceId, ip);
+      const result = await riskService.checkAndRegister(phone, name, deviceId, ip, req);
       return success(res, result, '人机验证通过，注册成功，已发放停车券');
     } catch (err) {
       next(err);

@@ -61,16 +61,21 @@ const rateLimiter = (type) => {
   return async (req, res, next) => {
     // ═══════════════════════════════════════════════
     // ⬜ 白名单放行：IP/设备在白名单中，跳过一切限流和黑名单
+    // 🆕 结果挂到 req 上，避免 riskService 重复查询
     // ═══════════════════════════════════════════════
     if (redisClient.isReady) {
       try {
         const ip = extractIp(req);
         const deviceId = req.body?.deviceId || '';
-        if (await whitelistService.isWhitelisted(ip, deviceId)) {
-          console.log(`[RateLimiter::${type}] ⬜ 白名单放行 ip=${ip}`);
+        const isWhitelisted = await whitelistService.isWhitelisted(ip, deviceId);
+        req._isWhitelisted = isWhitelisted;
+        req._whitelistChecked = true;
+        if (isWhitelisted) {
           return next();
         }
-      } catch {}
+      } catch {
+        req._whitelistChecked = false;
+      }
     }
 
     // ── ip_bl 类型：纯黑名单查询，不依赖 Redis 可用性 ──
