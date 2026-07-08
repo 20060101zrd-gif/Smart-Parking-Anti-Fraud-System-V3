@@ -100,9 +100,9 @@
 |:---:|:---:|:---:|
 | ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
 
-| 滑块验证 | 风控拦截 | 注销确认 |
-|:---:|:---:|:---:|
-| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-cancel-account.jpg) |
+| 滑块验证 (IP频控) | 风控拦截 (手机号注销库) | 风控拦截 (设备黑名单) | 注销确认 |
+|:---:|:---:|:---:|:---:|
+| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-risk-device-blocked.jpg) | ![](screenshots/c-cancel-account.jpg) |
 
 ### B 端（管理后台）
 
