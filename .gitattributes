@@ -1,0 +1,7 @@
+# Mark image files as binary to prevent CRLF corruption
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
