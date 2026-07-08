@@ -94,7 +94,7 @@
 
 ## 系统截图
 
-### C 端（手机 App）
+### C 端（手机）
 
 | 注册页面 | 注册成功 | 已有优惠券 |
 |:---:|:---:|:---:|
@@ -102,7 +102,7 @@
 
 | 滑块验证 | 风控拦截 | 注销确认 |
 |:---:|:---:|:---:|
-| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ⏳ 待补充 |
+| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-cancel-account.jpg) |
 
 ### B 端（管理后台）
 
