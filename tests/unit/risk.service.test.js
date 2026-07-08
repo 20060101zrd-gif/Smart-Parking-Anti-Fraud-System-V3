@@ -63,6 +63,7 @@ jest.mock('../../backend/src/utils/crypto', () => ({
 
 // ── mock logger ──
 jest.mock('../../backend/src/utils/logger', () => ({
+  debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
