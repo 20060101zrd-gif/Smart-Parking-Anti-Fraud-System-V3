@@ -4,7 +4,17 @@
 
 **一句话：帮停车场自动识别和拦截羊毛党刷券行为，让每一张新人优惠券都发到真正有价值的用户手上，节省营销预算。**
 
-![Tests](https://img.shields.io/badge/Tests-240/240%20Passed-brightgreen) ![Node.js](https://img.shields.io/badge/Node.js-18.x-green) ![Docker](https://img.shields.io/badge/Docker-Supported-blue) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Tests](https://img.shields.io/badge/Tests-240/240%20Passed-brightgreen) ![Node.js](https://img.shields.io/badge/Node.js-18.x-green) ![Docker](https://img.shields.io/badge/Docker-Supported-blue) ![License](https://img.shields.io/badge/License-MIT-yellow) ![Status](https://img.shields.io/badge/Deployed-Live-brightgreen)
+
+---
+
+## 🌐 在线访问
+
+> 系统已部署至阿里云服务器，扫码即可体验
+
+| 扫码注册领券 | 注册地址 |
+|:---:|:---|
+| ![QR Code](qr-code.png) | `http://47.86.41.111/app.html` |
 
 ---
 
