@@ -141,6 +141,19 @@
 const API = window.location.origin + '/api/v1';
 let _phone = '', _name = '';
 
+// ── 设备指纹：生成 UUID 并持久化到 localStorage ──
+function getDeviceId() {
+  let did = localStorage.getItem('_pf_device_id');
+  if (!did) {
+    did = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+    localStorage.setItem('_pf_device_id', did);
+  }
+  return did;
+}
+
 // ── Page switching ──
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -184,7 +197,8 @@ async function handleRegister() {
 async function doRegister(captchaToken) {
   showLoading('提交中...');
   const ep = captchaToken ? '/user/verify-captcha' : '/user/register';
-  const body = captchaToken ? { phone: _phone, name: _name, captchaToken } : { phone: _phone, name: _name };
+  const deviceId = getDeviceId();
+  const body = captchaToken ? { phone: _phone, name: _name, captchaToken, deviceId } : { phone: _phone, name: _name, deviceId };
   try {
     const r = await fetch(API + ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json();
@@ -257,7 +271,7 @@ async function doCancel() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
-    const r = await fetch(API + '/user/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone }), signal: controller.signal });
+    const r = await fetch(API + '/user/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone, deviceId: getDeviceId() }), signal: controller.signal });
     clearTimeout(timeout);
     const data = await r.json();
     if (data.code === 20000) {
