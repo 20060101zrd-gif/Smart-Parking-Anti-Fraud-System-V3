@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import client from '../api/interceptors'
 import { storage } from '../utils/secureStore'
+import { getDeviceId } from '../utils/deviceId'
 import { navigate } from '../navigation/RootNavigation'
 import SliderCaptcha from '../components/SliderCaptcha'
 
@@ -50,9 +51,10 @@ export default function RegisterScreenNew() {
   // ── 执行注册（低风险路径） ────────────────────────────
   const doRegister = async (captchaToken = null) => {
     const endpoint = captchaToken ? '/user/verify-captcha' : '/user/register'
+    const deviceId = await getDeviceId()
     const body = captchaToken
-      ? { phone, name, captchaToken }
-      : { phone, name }
+      ? { phone, name, captchaToken, deviceId }
+      : { phone, name, deviceId }
 
     const res = await client.post(endpoint, body)
     return res.data
