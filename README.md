@@ -102,7 +102,7 @@
 
 | 滑块验证 | 风控拦截 | 注销确认 |
 |:---:|:---:|:---:|
-| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-cancel-account.jpg) |
+| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-cancel-account.png) |
 
 ### B 端（管理后台）
 
