@@ -59,7 +59,7 @@
   <aside class="w-56 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col min-h-screen shadow-sm">
     <div class="px-4 py-4 border-b border-gray-100 flex items-center gap-3">
       <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">P</div>
-      <div><p class="font-bold text-gray-900 text-sm">风控管理平台</p><p class="text-xs text-gray-400">Parking Guard v3</p></div>
+      <div><p class="font-bold text-gray-900 text-sm">风控管理平台</p><p class="text-xs text-gray-400" id="sidebar-clock">--</p></div>
     </div>
     <nav class="flex-1 px-2 py-3 space-y-1" id="sidebar-nav">
       <a onclick="switchPage('overview')" data-page="overview" class="nav-item active flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
@@ -618,8 +618,11 @@ async function unbanAll(){
   if(!confirm('确定解封当前页面所有黑名单条目吗？'))return;
   const rows=document.querySelectorAll('#bl-tbody tr');
   if(!rows.length)return toast('没有可解封的条目',false);
-  let ok=0, fail=0;
-  for(const row of rows){
+  let ok=0,fail=0;
+  var totalRows=rows.length;
+  toast("正在解封，请稍候... (0/"+totalRows+")");
+  for(var ri=0;ri<rows.length;ri++){
+    var row=rows[ri];
     const btn=row.querySelector('button[data-bl-type]');
     if(!btn)continue;
     const blType=btn.getAttribute('data-bl-type')||'';
@@ -645,7 +648,11 @@ async function unbanAll(){
         if(r.code===20000)ok++;else fail++;
       }
     }
-    await new Promise(r=>setTimeout(r,2100)); // 避免触发 adminIpLimiter（30次/60s）
+    var doneN=ok+fail;
+    var tc2=document.getElementById("toast-container");
+    var lt2=tc2&&tc2.lastElementChild;
+    if(lt2&&lt2.textContent.indexOf("正在")>=0)lt2.textContent="正在解封 ("+(doneN+1)+"/"+totalRows+")...";
+    await new Promise(function(r){setTimeout(r,2100)}); // 避免触发 adminIpLimiter（30次/60s）
   }
   toast(`解封完成：成功 ${ok} 条${fail?'，失败 '+fail+' 条':''}`, ok>0);
   if(ok)loadBlacklist();
@@ -835,16 +842,26 @@ function usersPage(d){
   usersCurPage=Math.max(1,usersCurPage+d);
   loadUsers(usersCurPage);
 }
+
 
-(async function(){
-  const r=await api('/overview');
+// Real-time clock
+function updateClock(){
+  var now=new Date();
+  var ts=now.getFullYear()+"-"+(now.getMonth()<9?"0":"")+(now.getMonth()+1)+"-"+(now.getDate()<10?"0":"")+now.getDate()+" "+(now.getHours()<10?"0":"")+now.getHours()+":"+(now.getMinutes()<10?"0":"")+now.getMinutes()+":"+(now.getSeconds()<10?"0":"")+now.getSeconds();
+  var el=document.getElementById("sidebar-clock");if(el)el.textContent=ts;
+}
+setInterval(updateClock,1000);updateClock();
+
+// Init: wait for DOM + auto-login
+document.addEventListener("DOMContentLoaded",async function(){
+  var r=await api("/overview");
   if(r.code===20000){
-    document.getElementById('login-view').classList.add('hidden');
-    document.getElementById('dashboard-view').classList.remove('hidden');
-    document.getElementById('admin-name-display').textContent='admin';
+    document.getElementById("login-view").classList.add("hidden");
+    document.getElementById("dashboard-view").classList.remove("hidden");
+    document.getElementById("admin-name-display").textContent="admin";
     loadOverview();
-  }else{document.getElementById('login-view').classList.remove('hidden');}
-})();
+  }else{document.getElementById("login-view").classList.remove("hidden");}
+});
 </script>
 </body>
 </html>
