@@ -111,6 +111,17 @@ class ConfigService {
         [key, String(val)]
       );
     }
+    // 🆕 迁移：将旧默认值强制同步为新默认值（不影响管理员手动修改后的值）
+    const migrations = [
+      { key: 'ip_register_limit', oldVal: '5', newVal: String(ConfigService.DEFAULTS.ip_register_limit) },
+      { key: 'ip_blocklist_ttl_hours', oldVal: '24', newVal: String(ConfigService.DEFAULTS.ip_blocklist_ttl_hours) },
+    ];
+    for (const m of migrations) {
+      await db.run(
+        `UPDATE sys_config SET config_value = ? WHERE config_key = ? AND config_value = ?`,
+        [m.newVal, m.key, m.oldVal]
+      );
+    }
   }
 }
 
