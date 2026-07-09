@@ -247,7 +247,7 @@ class RiskService {
             interceptLog.logIntercept(ipAddress, deviceId, `设备注销次数超限 (${currentCancelCount}/${cancelLimit})`, 'HIGH');
             // 🆕 超限时先拉黑设备，再拒绝本次注销
             await this._blacklistDevice(deviceId, deviceId, '注销次数超限自动拉黑');
-            throw this._buildBizError(403, 40301, '注销失败：当前设备注销次数已达上限（可在管理后台调整），无法继续注销');
+            throw this._buildBizError(403, 40301, '注销失败：注销次数已达上限，无法继续注销');
           }
         } catch (err) {
           if (err.isBusinessError) throw err;
