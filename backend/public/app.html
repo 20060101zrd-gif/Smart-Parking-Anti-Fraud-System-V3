@@ -198,34 +198,37 @@ function goCancel() {
 function goHome() { showPage('home'); }
 
 // ── Blocked page countdown ──
-let blockCountdownId = null;
-function startBlockCountdown(seconds) {
+let blockCountdownId = null, blockedSince = 0, blockedDuration = 60;
+function startBlockCountdown() {
   stopBlockCountdown();
-  const timerEl = document.getElementById('blocked-timer');
-  const retryBtn = document.getElementById('blocked-retry-btn');
+  // 🆕 首次封禁记时间，重复进入不重置
+  if (!blockedSince) { blockedSince = Date.now(); blockedDuration = 60; }
+  var timerEl = document.getElementById('blocked-timer');
+  var retryBtn = document.getElementById('blocked-retry-btn');
   if (!timerEl || !retryBtn) return;
-  let remaining = seconds;
   timerEl.classList.remove('hidden');
   retryBtn.classList.add('hidden');
   function tick() {
+    var elapsed = Math.floor((Date.now() - blockedSince) / 1000);
+    var remaining = Math.max(0, blockedDuration - elapsed);
     if (remaining <= 0) {
       timerEl.textContent = '封禁已到期，可以重试';
       retryBtn.classList.remove('hidden');
+      blockedSince = 0; // 重置，下次封禁重新计时
       return;
     }
-    const m = Math.floor(remaining / 60);
-    const s = remaining % 60;
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
     timerEl.textContent = '剩余 ' + (m > 0 ? m + '分' : '') + s + '秒 自动解封';
-    remaining--;
     blockCountdownId = setTimeout(tick, 1000);
   }
   tick();
 }
 function stopBlockCountdown() {
   if (blockCountdownId) { clearTimeout(blockCountdownId); blockCountdownId = null; }
-  const t = document.getElementById('blocked-timer');
+  var t = document.getElementById('blocked-timer');
   if (t) { t.classList.add('hidden'); t.textContent = ''; }
-  const b = document.getElementById('blocked-retry-btn');
+  var b = document.getElementById('blocked-retry-btn');
   if (b) b.classList.add('hidden');
 }
 
@@ -263,7 +266,7 @@ async function doRegister(captchaToken) {
         document.getElementById('blocked-hint').textContent = '可注销旧账号释放名额后重新注册';
       } else if (d.code === 40302) {
         document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
-        startBlockCountdown(60);
+        startBlockCountdown();
       } else {
         document.getElementById('blocked-hint').textContent = '请于 90 天后重新尝试';
       }
@@ -362,7 +365,7 @@ function loadCaptcha() {
         document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
         document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
         showPage('blocked');
-        startBlockCountdown(60);
+        startBlockCountdown();
       }
       return;
     }
@@ -478,7 +481,7 @@ async function verifyCaptcha(sliderX) {
       document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
       document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
       showPage('blocked');
-      startBlockCountdown(60);
+      startBlockCountdown();
     } else {
       const failCount = (v.data && v.data.failCount) || 0;
       document.getElementById('cap-status').textContent = '❌ 验证失败 (' + failCount + '/3)，请重试';
