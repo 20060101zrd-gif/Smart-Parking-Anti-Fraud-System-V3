@@ -116,7 +116,7 @@ const rateLimiter = (type) => {
       errorMessage = '操作过于频繁，请5秒后再试';
     } else if (type === 'admin_ip') {
       key = `limit:admin_ip:${req.ip}`;
-      limit = 120;
+      limit = 30;
       windowSeconds = 60;
       errorMessage = '管理员接口请求超限，请稍后再试';
     } else if (type === 'reg_ip') {

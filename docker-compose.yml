@@ -25,7 +25,7 @@ services:
       - ENCRYPT_KEY=${ENCRYPT_KEY}
     volumes:
       - ./backend/.keys:/app/.keys
-    mem_limit: 384m
+    mem_limit: 512m
     restart: always
 
   redis:

@@ -3,7 +3,7 @@ const { createClient } = require('redis');
 const env = require('../config/env');
 
 // 单次 Redis 操作超时（毫秒）
-const OP_TIMEOUT_MS = 1500;
+const OP_TIMEOUT_MS = 800;
 // 自动重连间隔（毫秒）
 const RECONNECT_INTERVAL_MS = 5000;
 
