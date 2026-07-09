@@ -81,12 +81,16 @@ class ConfigService {
       // 🆕 修改 device_cancel_limit 时自动清零所有设备注销计数器
       if (key === 'device_cancel_limit') {
         try {
-          const prefix = 'pf:risk:cancel_count:device:';
-          const scanResult = await redisClient.client.scan(0, { MATCH: `${prefix}*`, COUNT: 100 });
-          const keys = scanResult.keys;
+          const keys = await redisClient.scanKeys('risk:cancel_count:device:*');
           if (keys.length > 0) {
-            await redisClient.client.del(keys);
+            // 去掉 prefix 前缀后逐个删除（del 方法内部会再加前缀）
+            for (const fullKey of keys) {
+              const shortKey = fullKey.replace(/^pf:/, '');
+              await redisClient.del(shortKey);
+            }
             console.log(`[ConfigService] 已清零 ${keys.length} 个设备注销计数器`);
+          } else {
+            console.log('[ConfigService] 无设备注销计数器需要清零');
           }
         } catch (e) {
           console.error('[ConfigService] 清零设备注销计数器失败:', e.message);
