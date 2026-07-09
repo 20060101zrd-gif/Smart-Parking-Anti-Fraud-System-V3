@@ -79,7 +79,8 @@ class CaptchaService {
     const pattern = this._generatePattern(captchaId, answerX, answerY, this.PUZZLE_WIDTH, this.PUZZLE_HEIGHT);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}">
   ${pattern}
-  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#6366f1" stroke-width="2" rx="4"/>
+  <!-- 边框与缺口虚线一致，对齐后融为一体 -->
+  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
 </svg>`;
   }
 

@@ -17,7 +17,7 @@
     /* 🆕 拼图验证码 */
     .captcha-canvas{position:relative;width:100%;height:150px;background:#f8fafb;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
     .captcha-canvas svg{width:100%;height:100%;display:block}
-    .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));z-index:10}
+    .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));z-index:10;transform-origin:0 0}
     .captcha-piece:active{cursor:grabbing}
     .captcha-piece svg{width:100%;height:100%;display:block}
   </style>
@@ -329,7 +329,8 @@ async function doCancel() {
 }
 
 // ═══════════════ CAPTCHA ═══════════════
-let capData = null, capDragging = false, capScale = 1, capMaxX = 0, capStartX = 0, capStartLeft = 0;
+let capData = null, capDragging = false, capScale = 1, capMaxX = 0;
+let capPieceX = 0, capPieceY = 0, capStartX = 0, capStartLeft = 0;
 let capCanvas, capPiece, capThumb, capBar;
 
 function capInit() {
@@ -356,11 +357,12 @@ function loadCaptcha() {
   fetch(API + '/captcha/generate').then(r => r.json()).then(d => {
     if (d.code !== 20000) {
       document.getElementById('cap-status').textContent = '验证码加载失败';
-      // 🆕 40302=IP被封
+      // 🆕 40302=IP被封 → 倒计时封禁页
       if (d.code === 40302) {
         document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
-        document.getElementById('blocked-hint').textContent = '请于 1 分钟后重新尝试';
+        document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
         showPage('blocked');
+        startBlockCountdown(60);
       }
       return;
     }
@@ -370,19 +372,28 @@ function loadCaptcha() {
 }
 
 function renderCaptcha(data) {
-  const cw = capCanvas.offsetWidth;
+  const cw = capCanvas.offsetWidth || data.canvas.width;
   capScale = cw / data.canvas.width;
   capMaxX = (data.canvas.width - data.puzzle.width) * capScale;
 
+  // 🆕 缺口 Y 坐标（服务端返回；兼容旧数据则默认居中）
+  const rawY = (data.puzzleY != null) ? data.puzzleY : (data.canvas.height - data.puzzle.height) / 2;
+  capPieceY = rawY * capScale;
+
+  // 背景 SVG（含缺口）
   capCanvas.innerHTML = data.backgroundSvg;
   const bgSvg = capCanvas.querySelector('svg');
-  if (bgSvg) { bgSvg.style.width = cw + 'px'; bgSvg.style.height = (data.canvas.height * capScale) + 'px'; }
+  if (bgSvg) {
+    bgSvg.style.width = cw + 'px';
+    bgSvg.style.height = (data.canvas.height * capScale) + 'px';
+  }
 
+  // 拼图块 SVG（与缺口位图案一致）
   capPiece.innerHTML = data.puzzleSvg;
   capPiece.style.width = (data.puzzle.width * capScale) + 'px';
   capPiece.style.height = (data.puzzle.height * capScale) + 'px';
-  capPiece.style.top = (data.puzzleY * capScale) + 'px';
-  capPiece.style.left = '0px';
+  capPieceX = 0;
+  setCapPosition(0);
 
   // 复位滑轨
   capThumb.style.left = '0px';
@@ -393,19 +404,22 @@ function renderCaptcha(data) {
   capDragging = false;
 }
 
-function setCapPosition(left) {
-  capPiece.style.left = left + 'px';
+function setCapPosition(x) {
+  capPieceX = Math.max(0, Math.min(x, capMaxX));
+  // 🆕 用 transform 定位，避免 top/left 被 CSS 覆盖或出现 NaN
+  capPiece.style.transform = `translate3d(${capPieceX.toFixed(1)}px, ${capPieceY.toFixed(1)}px, 0)`;
+
   // 同步 thumb 位置
   const trackW = capThumb.parentElement.offsetWidth - capThumb.offsetWidth;
-  const thumbLeft = capMaxX > 0 ? (left / capMaxX) * trackW : 0;
+  const thumbLeft = capMaxX > 0 ? (capPieceX / capMaxX) * trackW : 0;
   capThumb.style.left = Math.max(0, Math.min(thumbLeft, trackW)) + 'px';
-  capBar.style.width = capMaxX > 0 ? ((left / capMaxX) * 100).toFixed(0) + '%' : '0%';
+  capBar.style.width = capMaxX > 0 ? ((capPieceX / capMaxX) * 100).toFixed(0) + '%' : '0%';
 }
 
 // ── 拼图块直接拖拽 ──
 function puzzleStart(e) {
   capStartX = e.touches ? e.touches[0].clientX : e.clientX;
-  capStartLeft = parseFloat(capPiece.style.left || 0);
+  capStartLeft = capPieceX;
   capDragging = 1; // 1=dragging piece
   document.getElementById('captcha-hint').textContent = '...';
   e.preventDefault();
@@ -427,16 +441,16 @@ function capMove(e) {
 
   if (capDragging === 1) {
     // 拖拼图块 → 同步 thumb
-    const left = Math.max(0, Math.min(capStartLeft + dx, capMaxX));
-    setCapPosition(left);
+    setCapPosition(capStartLeft + dx);
   } else {
     // 拖 thumb → 同步拼图块
     const trackW = capThumb.parentElement.offsetWidth - capThumb.offsetWidth;
     const thumbLeft = Math.max(0, Math.min(capStartLeft + dx, trackW));
     capThumb.style.left = thumbLeft + 'px';
-    capBar.style.width = ((thumbLeft / trackW) * 100).toFixed(0) + '%';
+    capBar.style.width = trackW > 0 ? ((thumbLeft / trackW) * 100).toFixed(0) + '%' : '0%';
     const pieceLeft = trackW > 0 ? (thumbLeft / trackW) * capMaxX : 0;
-    capPiece.style.left = pieceLeft + 'px';
+    capPieceX = pieceLeft;
+    capPiece.style.transform = `translate3d(${capPieceX.toFixed(1)}px, ${capPieceY.toFixed(1)}px, 0)`;
   }
   e.preventDefault();
 }
@@ -444,8 +458,7 @@ function capMove(e) {
 function capEnd() {
   if (!capDragging) return;
   capDragging = false;
-  const left = parseFloat(capPiece.style.left || 0);
-  const serverX = Math.round(left / capScale);
+  const serverX = Math.round(capPieceX / capScale);
   verifyCaptcha(serverX);
 }
 
@@ -479,7 +492,8 @@ async function verifyCaptcha(sliderX) {
 }
 
 function resetCaptcha() {
-  if (capPiece) capPiece.style.left = '0px';
+  capPieceX = 0;
+  if (capPiece) setCapPosition(0);
   if (capThumb) { capThumb.style.left = '0px'; capBar.style.width = '0%'; }
   document.getElementById('cap-status').textContent = '';
   capDragging = false;
