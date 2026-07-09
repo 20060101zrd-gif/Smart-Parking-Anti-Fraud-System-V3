@@ -242,8 +242,8 @@ async function preflight() {
   // 🆕 设置测试用风控阈值（确保测试环境一致）
   try {
     await api.put('/admin/config', { key: 'ip_register_limit', value: 5 }, { headers: { Cookie: adminCookie } });
-    await api.put('/admin/config', { key: 'ip_blocklist_ttl_hours', value: 24 }, { headers: { Cookie: adminCookie } });
-    console.log(`  ${colors.green}✓${colors.reset} 风控阈值已设定: ip_register_limit=5, ip_blocklist_ttl_hours=24`);
+    await api.put('/admin/config', { key: 'ip_blocklist_ttl_hours', value: 0.017 }, { headers: { Cookie: adminCookie } });
+    console.log(`  ${colors.green}✓${colors.reset} 风控阈值已设定: ip_register_limit=5, ip_blocklist_ttl_hours=0.017 (~1分钟)`);
   } catch (e) {
     console.log(`  ${colors.yellow}⚠${colors.reset} 风控阈值设定失败: ${e.message}`);
   }
