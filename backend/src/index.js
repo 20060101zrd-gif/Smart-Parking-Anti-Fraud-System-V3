@@ -17,7 +17,10 @@ app.use(express.json());
 // 解析 Cookie (后续鉴权需要)
 // 备注: 需在 package.json 引入 cookie-parser, 当前暂用占位
 const cookieParser = require('cookie-parser');
-app.use(cookieParser()); 
+app.use(cookieParser());
+// 🆕 Gzip 压缩：减少 70% 带宽（对 2Mbps ECS 尤其关键）
+const compression = require('compression');
+app.use(compression());
 
 // --- 系统启动编排 ---
 async function bootstrap() {

@@ -291,8 +291,8 @@ describe('RiskService', () => {
 
   describe('cancelAccount — 注销限流', () => {
     it('同一 IP 高频注销应触发限流', async () => {
-      // 模拟第 5 次请求（超过 10 分钟窗口内 4 次上限）
-      mockRedis.incr.mockResolvedValue(5);
+      // 模拟第 21 次请求（超过 10 分钟窗口内 20 次上限）
+      mockRedis.incr.mockResolvedValue(21);
 
       await expect(
         RiskService.cancelAccount('13800138000', '1.2.3.4', 'device-001'),
