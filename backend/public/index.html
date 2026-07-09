@@ -317,7 +317,7 @@
 <script>
 let currentPage='overview', logCurPage=1, blCurPage=1;
 let usersCurPage=1, usersRevealed={};
-const api=(url,opts={})=>fetch('http://parking-guard-v3.abrdns.com/api/v1/admin'+url,{headers:{'Content-Type':'application/json'},...opts}).then(r=>r.json());
+const api=(url,opts={})=>fetch(location.origin+'/api/v1/admin'+url,{headers:{'Content-Type':'application/json'},...opts}).then(r=>r.json());
 
 function toast(msg,ok=true){
   const el=document.getElementById('toast-container'),d=document.createElement('div');
