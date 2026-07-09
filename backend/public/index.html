@@ -85,7 +85,7 @@
   <main class="flex-1 p-6 overflow-auto">
     <!-- Overview Page -->
     <div id="page-overview" class="page-view active">
-      <h1 class="text-2xl font-bold mb-6">系统概览</h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">系统概览 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadOverview()" title="刷新数据"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="overview-cards">
         <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <p class="text-sm text-gray-500 mb-1">今日拦截量</p>
@@ -125,7 +125,7 @@
 
     <!-- Config Page -->
     <div id="page-config" class="page-view">
-      <h1 class="text-2xl font-bold mb-6">风控规则配置</h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">风控规则配置 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadConfig()" title="刷新规则"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <p class="text-sm text-gray-500 mb-4">修改后实时生效，操作记录留存</p>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" id="config-table-container">
         <table><thead><tr><th>参数标识</th><th>当前值</th><th>说明</th><th>操作</th></tr></thead><tbody id="config-tbody"></tbody></table>
@@ -134,7 +134,7 @@
 
     <!-- Logs Page -->
     <div id="page-logs" class="page-view">
-      <h1 class="text-2xl font-bold mb-6">拦截日志</h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">拦截日志 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadLogs()" title="刷新日志"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3 items-center">
         <input type="text" id="log-ip" placeholder="IP筛选" class="w-32">
         <input type="date" id="log-start" class="w-36" lang="en"><span class="self-center text-gray-400">至</span>
@@ -161,7 +161,7 @@
     <div id="page-blacklist" class="page-view">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">黑名单管理</h1>
+          <h1 class="text-2xl font-bold text-gray-900">黑名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="loadBlacklist()" title="刷新黑名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
           <p class="text-sm text-gray-500 mt-1">共 <span id="bl-total-display" class="font-semibold text-gray-700">0</span> 条记录</p>
         </div>
         <button class="btn btn-sm inline-flex items-center justify-center gap-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50" onclick="showAddBlacklistModal()">
@@ -202,7 +202,7 @@
 
     <!-- Whitelist Page -->
     <div id="page-whitelist" class="page-view">
-      <h1 class="text-2xl font-bold mb-6">白名单管理</h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">白名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadWhitelist()" title="刷新白名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <!-- 🆕 通过手机号一键加入设备白名单 -->
       <div class="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-100 mb-4">
         <div class="flex flex-wrap items-center gap-3">
@@ -235,7 +235,7 @@
     <div id="page-users" class="page-view">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">用户管理</h1>
+          <h1 class="text-2xl font-bold text-gray-900">用户管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="loadUsers(usersCurPage)" title="刷新用户"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
           <p class="text-sm text-gray-500 mt-1">共 <span id="users-total" class="font-semibold text-gray-700">0</span> 条注册记录</p>
         </div>
       </div>
