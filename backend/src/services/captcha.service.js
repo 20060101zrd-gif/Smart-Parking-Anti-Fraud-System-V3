@@ -88,7 +88,7 @@ class CaptchaService {
    */
   _generatePattern(captchaId, x, y, width, height) {
     const hash = crypto.createHash('sha256').update(captchaId).digest('hex');
-    const cellSize = 10;
+    const cellSize = 20;   // 20px 网格，14×8=112 个色块，轻量不卡
     const cols = Math.ceil(this.CANVAS_WIDTH / cellSize);
     let shapes = '';
 
