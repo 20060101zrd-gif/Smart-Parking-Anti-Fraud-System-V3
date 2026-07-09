@@ -186,6 +186,10 @@ class RiskService {
    * @param {String} deviceId  设备指纹（可选，用于同步拉黑设备）
    */
   async cancelAccount(phone, ipAddress = 'unknown_ip', deviceId = '') {
+    // 🆕 注销次数上限变量（函数级作用域，白名单/非白名单路径均可用）
+    let cancelLimit = 1;
+    let currentCancelCount = 0;
+
     // ⬜ 白名单放行：IP/设备在白名单中，跳过注销频控和注销次数限制
     if (await whitelistService.isWhitelisted(ipAddress, deviceId)) {
       console.log(`[RiskService] ⬜ 白名单放行 cancel ip=${ipAddress} deviceId=${(deviceId || '').substring(0, 12)}...`);
@@ -222,8 +226,6 @@ class RiskService {
 
 
       // 🆕 2. 设备注销次数上限检查（从风控规则配置面板动态读取）
-      let cancelLimit = 1;
-      let currentCancelCount = 0;
       if (deviceId) {
         try {
           const cfg = await configService.getAll();
