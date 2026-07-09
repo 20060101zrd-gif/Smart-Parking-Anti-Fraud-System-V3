@@ -3,6 +3,7 @@ const redisClient = require('../data/redis.client');
 const { fail } = require('../utils/response');
 const interceptLog = require('../services/intercept-log.service');
 const whitelistService = require('../services/whitelist.service');
+const configService = require('../services/config.service');
 const logger = require('../utils/logger');
 
 /**
@@ -119,10 +120,12 @@ const rateLimiter = (type) => {
       windowSeconds = 60;
       errorMessage = '管理员接口请求超限，请稍后再试';
     } else if (type === 'reg_ip') {
-      // 🆕 注册IP维度限流：1分钟5次，超限触发中风险人机验证（401而非429）
+      // 🆕 注册IP维度限流：1分钟N次（N 从风控规则配置面板动态读取），超限触发中风险人机验证（401而非429）
+      let cfg;
+      try { cfg = await configService.getAll(); } catch {}
       const ip = extractIp(req);
       key = `limit:reg_ip:${ip}`;
-      limit = 5;
+      limit = (cfg && cfg.ip_register_limit) || 5;
       windowSeconds = 60;
       statusCode = 401;
       errorCode = 40101;

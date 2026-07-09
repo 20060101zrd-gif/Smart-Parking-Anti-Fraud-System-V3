@@ -5,6 +5,7 @@ const redisClient = require('../data/redis.client');
 const db = require('../data/mysql.client');
 const interceptLog = require('./intercept-log.service');
 const whitelistService = require('./whitelist.service');
+const configService = require('./config.service');
 const logger = require('../utils/logger');
 
 class RiskService {
@@ -91,7 +92,29 @@ class RiskService {
     }
 
     // ═══════════════════════════════════════════════
-    // 🔴 高风险检测-2：手机号命中历史注销沉淀库（基于 SHA256 phone_hash）
+    // 🟡 中风险检测-2：单设备注册数量上限（从风控规则配置面板动态读取）
+    // ═══════════════════════════════════════════════
+    if (deviceId) {
+      try {
+        const cfg = await configService.getAll();
+        const deviceLimit = cfg.device_register_limit || 3;
+        const row = await db.get(
+          `SELECT COUNT(*) AS cnt FROM sys_users WHERE device_hash = ? AND status = 1`,
+          [deviceId]
+        );
+        if (row && row.cnt >= deviceLimit) {
+          logger.warn({ deviceId: deviceId.substring(0, 16), cnt: row.cnt, limit: deviceLimit, ip }, '中风险拦截 → 单设备注册超限');
+          interceptLog.logIntercept(ip, deviceId, `单设备注册超限 (${row.cnt}/${deviceLimit})`, 'MEDIUM');
+          throw this._buildBizError(403, 40301, '风控拦截：当前设备关联账号已超限，该设备注册的活跃账号数量已达上限');
+        }
+      } catch (err) {
+        if (err.isBusinessError) throw err;
+        logger.warn({ err: err.message }, '设备注册计数查询失败，降级放行');
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // 🔴 高风险检测-3：手机号命中历史注销沉淀库（基于 SHA256 phone_hash）
     // ═══════════════════════════════════════════════
     const phoneHash = encryption.hashPhone(phone);
     const probeKey = `risk:hash_bl:${phoneHash}`;
@@ -270,15 +293,24 @@ class RiskService {
   async recordCaptchaFailure(ip) {
     if (!ip) return 0;
 
+    // 🆕 从风控规则配置面板动态读取阈值
+    let captchaFailMax = this.CAPTCHA_FAIL_MAX;
+    let ipBlTtl = this.IP_BLACKLIST_TTL;
+    try {
+      const cfg = await configService.getAll();
+      captchaFailMax = cfg.captcha_fail_max || 3;
+      ipBlTtl = (cfg.ip_blocklist_ttl_hours || 24) * 3600;
+    } catch {}
+
     // 🆕 Redis 降级 → 内存计数器
     if (!redisClient.isReady) {
       const entry = this._memCaptchaFail.get(ip) || { count: 0 };
       entry.count++;
       this._memCaptchaFail.set(ip, entry);
       const c = entry.count;
-      console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${c}/${this.CAPTCHA_FAIL_MAX}) [内存]`);
-      if (c >= this.CAPTCHA_FAIL_MAX) {
-        this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${c}`, this.IP_BLACKLIST_TTL);
+      console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${c}/${captchaFailMax}) [内存]`);
+      if (c >= captchaFailMax) {
+        this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${c}`, ipBlTtl);
         interceptLog.logIntercept(ip, '', `连续${c}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
       }
       return c;
@@ -292,10 +324,10 @@ class RiskService {
       if (count === 1) {
         await redisClient.client.expire(fullKey, this.CAPTCHA_FAIL_WINDOW);
       }
-      console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${count}/${this.CAPTCHA_FAIL_MAX})`);
-      if (count >= this.CAPTCHA_FAIL_MAX) {
-        await redisClient.set(`risk:ip_bl:${ip}`, `captcha_fail_x${count}`, this.IP_BLACKLIST_TTL);
-        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已自动加入24小时临时黑名单`);
+      console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${count}/${captchaFailMax})`);
+      if (count >= captchaFailMax) {
+        await redisClient.set(`risk:ip_bl:${ip}`, `captcha_fail_x${count}`, ipBlTtl);
+        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已自动加入临时黑名单`);
         interceptLog.logIntercept(ip, '', `连续${count}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
       }
       return count;
