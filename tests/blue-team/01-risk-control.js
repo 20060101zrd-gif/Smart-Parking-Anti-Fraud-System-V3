@@ -270,6 +270,8 @@ async function preflight() {
       // 清理包含测试特征的 phone_blacklist_map 记录（防止残留 phone_hash 导致误拦截）
       // 仅清理可能干扰当前测试的 phone_blacklist_map
       await mysqlConn.execute('DELETE FROM phone_blacklist_map WHERE phone_mask = ?', ['']);
+      // 🆕 清理残留测试用户（device-normal-* 和 device-test-* 设备）
+      await mysqlConn.execute(`DELETE FROM sys_users WHERE device_hash LIKE 'device-normal-%' OR device_hash LIKE 'device-test-%'`);
       await mysqlConn.end();
     } catch (dbErr) {
       // MySQL 直连清理跳过（非关键）
@@ -286,7 +288,7 @@ async function test_01_normalRegister() {
   title('1. 低风险正常注册 (LOW)');
 
   const phone = P('001');
-  const resp = await api.post('/user/register', { phone, name: '正常用户', deviceId: 'device-normal-01' });
+  const resp = await api.post('/user/register', { phone, name: '正常用户', deviceId: 'device-normal-' + RUN_ID });
 
   assert('HTTP 200', resp.status === 200);
   assert('code=20000 (成功)', resp.data.code === 20000);
