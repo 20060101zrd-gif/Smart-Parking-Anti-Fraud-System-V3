@@ -500,7 +500,7 @@ parking-fraud-system/
 
 > 系统已部署至阿里云服务器，扫码注册领取停车券
 
-`http://47.86.41.111/app.html`
+`http://parking-guard-v3.abrdns.com/app.html`
 
 <img src="qr-code.png" width="220" alt="QR Code">
 
