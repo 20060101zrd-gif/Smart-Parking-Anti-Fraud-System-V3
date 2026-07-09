@@ -335,7 +335,7 @@ async function verifyCaptcha() {
     if (g.code !== 20000) { document.getElementById('cap-status').textContent = '验证码加载失败'; return; }
     const v = await fetch(API + '/captcha/verify', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ captchaId: g.data.captchaId, sliderX: g.data.puzzle.x + 5 })
+      body: JSON.stringify({ captchaId: g.data.captchaId, sliderX: (Math.random() * 200 + 20) | 0 })
     }).then(r => r.json());
     if (v.code === 20000) {
       document.getElementById('cap-status').textContent = '验证通过';

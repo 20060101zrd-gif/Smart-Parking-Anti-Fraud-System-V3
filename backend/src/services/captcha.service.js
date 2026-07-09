@@ -1,6 +1,7 @@
 // backend/src/services/captcha.service.js
 // 纯代码滑动拼图人机验证 — 后端核心逻辑
 // 零第三方依赖，基于 Node.js crypto + Redis
+// 🆕 v2: 服务端生成 SVG 图片，answerX 不返回给前端，真正防刷
 
 const crypto = require('crypto');
 const redisClient = require('../data/redis.client');
@@ -40,15 +41,81 @@ class CaptchaService {
     return min + (randomValue % range);
   }
 
+  /**
+   * 🆕 根据种子生成随机噪声点（deterministic per captchaId）
+   */
+  _generateNoise(seed, count, maxX, maxY) {
+    const hash = crypto.createHash('sha256').update(seed).digest('hex');
+    let noise = '';
+    for (let i = 0; i < count; i++) {
+      const cx = parseInt(hash.substring(i * 6, i * 6 + 3), 16) % maxX;
+      const cy = parseInt(hash.substring(i * 6 + 3, i * 6 + 6), 16) % maxY;
+      const r = (parseInt(hash.charAt(i % 64), 16) % 3) + 2;
+      const shade = parseInt(hash.substring((i * 2) % 56, (i * 2) % 56 + 2), 16) % 50 + 180;
+      noise += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.7"/>`;
+    }
+    return noise;
+  }
+
+  /**
+   * 🆕 生成背景 SVG（含缺口）
+   * answerX/answerY 仅用于渲染缺口位，不会返回给前端
+   */
+  _generateBackgroundSvg(captchaId, answerX, answerY) {
+    const noise = this._generateNoise(`bg_${captchaId}`, 18, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e2e8f0"/>
+      <stop offset="100%" style="stop-color:#f1f5f9"/>
+    </linearGradient>
+  </defs>
+  <rect width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="url(#bgGrad)"/>
+  ${noise}
+  <text x="${Math.floor(this.CANVAS_WIDTH / 2)}" y="18" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">滑动拼图验证</text>
+  <!-- 缺口：白色镂空 + 虚线边框 -->
+  <rect x="${answerX}" y="${answerY}" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#f8fafc" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
+</svg>`;
+  }
+
+  /**
+   * 🆕 生成拼图块 SVG
+   * 拼图块内含与缺口位一致的背景噪声（视觉上对齐后融为一体）
+   */
+  _generatePuzzleSvg(captchaId, answerX, answerY) {
+    const fullNoise = this._generateNoise(`bg_${captchaId}`, 18, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    // 只取缺口范围内的噪声点，坐标偏移到拼图块本地空间
+    let pieceNoise = '';
+    const hash = crypto.createHash('sha256').update(`bg_${captchaId}`).digest('hex');
+    for (let i = 0; i < 18; i++) {
+      const cx = parseInt(hash.substring(i * 6, i * 6 + 3), 16) % this.CANVAS_WIDTH;
+      const cy = parseInt(hash.substring(i * 6 + 3, i * 6 + 6), 16) % this.CANVAS_HEIGHT;
+      // 只保留在缺口范围内的点
+      if (cx >= answerX && cx < answerX + this.PUZZLE_WIDTH &&
+          cy >= answerY && cy < answerY + this.PUZZLE_HEIGHT) {
+        const r = (parseInt(hash.charAt(i % 64), 16) % 3) + 2;
+        const shade = parseInt(hash.substring((i * 2) % 56, (i * 2) % 56 + 2), 16) % 50 + 180;
+        pieceNoise += `<circle cx="${cx - answerX}" cy="${cy - answerY}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.7"/>`;
+      }
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}">
+  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#6366f1" rx="6"/>
+  <rect x="2" y="2" width="${this.PUZZLE_WIDTH - 4}" height="${this.PUZZLE_HEIGHT - 4}" fill="#e2e8f0" rx="4"/>
+  ${pieceNoise}
+  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#4f46e5" stroke-width="2" rx="6"/>
+</svg>`;
+  }
+
   // ─── 核心业务 ─────────────────────────────────────────
 
   /**
-   * 生成滑动验证码
-   *  1. 随机生成缺口坐标
-   *  2. 正确答案存入 Redis（60s 过期）
-   *  3. 返回画布参数 + 拼图参数（不含答案 X）
+   * 🆕 v2 生成滑动验证码
+   *  1. 随机生成缺口坐标（answerX 仅存 Redis，不返回前端）
+   *  2. 服务端生成背景 SVG + 拼图块 SVG
+   *  3. 前端只需渲染两张图片，用户手动拖拽对齐
    *
-   * @returns {Object} { captchaId, canvas, puzzle, expiresIn }
+   * @returns {Object} { captchaId, backgroundSvg, puzzleSvg, canvas, puzzle, puzzleY, expiresIn }
    */
   async generate() {
     const captchaId = this.generateId();
@@ -59,7 +126,7 @@ class CaptchaService {
     const answerX = this._randomInt(minX, maxX);
 
     // 缺口 Y 坐标：留出上下边距
-    const answerY = this._randomInt(5, this.CANVAS_HEIGHT - this.PUZZLE_HEIGHT - 5);
+    const answerY = this._randomInt(10, this.CANVAS_HEIGHT - this.PUZZLE_HEIGHT - 10);
 
     // 正确答案写入 Redis（降级 → 内存）
     const redisOk = await redisClient.set(
@@ -81,18 +148,23 @@ class CaptchaService {
       console.log(`[Captcha] 生成验证码 id=${captchaId} answerX=${answerX} answerY=${answerY}`);
     }
 
+    // 🆕 服务端生成 SVG 图片（前端无法从 SVG 中提取精确坐标）
+    const backgroundSvg = this._generateBackgroundSvg(captchaId, answerX, answerY);
+    const puzzleSvg = this._generatePuzzleSvg(captchaId, answerX, answerY);
+
     return {
       captchaId,
+      backgroundSvg,
+      puzzleSvg,
       canvas: {
         width:  this.CANVAS_WIDTH,
         height: this.CANVAS_HEIGHT
       },
       puzzle: {
         width:  this.PUZZLE_WIDTH,
-        height: this.PUZZLE_HEIGHT,
-        x:      answerX,          // 缺口X（用于前端渲染；安全由服务端 verify 校验）
-        y:      answerY
+        height: this.PUZZLE_HEIGHT
       },
+      puzzleY: answerY,   // Y 坐标不涉及滑动校验，仅用于前端垂直定位拼图块
       expiresIn: this.ANSWER_TTL
     };
   }

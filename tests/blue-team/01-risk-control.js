@@ -56,6 +56,23 @@ const api = axios.create({ baseURL: BASE, validateStatus: () => true, timeout: 1
 api.defaults.headers.common['X-Forwarded-For'] = '127.0.0.1';
 
 let adminCookie = '';  // 管理端 session cookie
+let rdsClient = null;  // 持久 Redis 连接，用于读取 captcha answer
+
+/** 🆕 从 Redis 读取验证码正确答案（前端不应知晓 answerX） */
+async function readCaptchaAnswer(captchaId) {
+  if (!rdsClient || !rdsClient.isOpen) {
+    try {
+      let redisPwd = process.env.REDIS_PASSWORD || '';
+      if ((redisPwd.startsWith('"') && redisPwd.endsWith('"')) || (redisPwd.startsWith("'") && redisPwd.endsWith("'"))) {
+        redisPwd = redisPwd.slice(1, -1);
+      }
+      rdsClient = createClient({ socket: { host: '127.0.0.1', port: 6379 }, password: redisPwd || undefined });
+      await rdsClient.connect();
+    } catch { return null; }
+  }
+  try { return await rdsClient.get('pf:captcha:answer:' + captchaId); }
+  catch { return null; }
+}
 
 // ──────────────────────────────────────────────────────────────────
 //  主函数
@@ -140,6 +157,11 @@ async function run() {
     if (r.detail) console.log(`       ${colors.dim}${r.detail}${colors.reset}`);
   }
 
+  // 清理 Redis 连接
+  if (rdsClient && rdsClient.isOpen) {
+    try { await rdsClient.quit(); } catch {}
+  }
+
   if (failCount > 0) {
     console.log(`\n${colors.yellow}⚠ 存在 ${failCount} 项未通过，请检查上方 ✗ 标记项。${colors.reset}`);
   } else {
@@ -186,38 +208,44 @@ async function preflight() {
   );
 
   // 清理注销频控计数器（避免 10min 内重跑时 cancel 被 429 拦截）
-  let rds;
   try {
     // 从 .env 读取密码，自动剥离引号
     let redisPwd = process.env.REDIS_PASSWORD || '';
     if ((redisPwd.startsWith('"') && redisPwd.endsWith('"')) || (redisPwd.startsWith("'") && redisPwd.endsWith("'"))) {
       redisPwd = redisPwd.slice(1, -1);
     }
-    rds = createClient({
+    rdsClient = createClient({
       socket: { host: '127.0.0.1', port: 6379 },
       password: redisPwd || undefined
     });
-    await rds.connect();
+    await rdsClient.connect();
     // 清理 cancel 频控 + ip_bl 黑名单 + whitelist + captcha 计数
-    await rds.del('pf:risk:ratelimit:cancel:127.0.0.1');
-    await rds.del('pf:risk:ip_bl:127.0.0.1');
-    await rds.del('pf:risk:captcha_fail:127.0.0.1');
-    await rds.del('pf:whitelist:ip:127.0.0.1');
-    await rds.del('pf:whitelist:device:127.0.0.1');
+    await rdsClient.del('pf:risk:ratelimit:cancel:127.0.0.1');
+    await rdsClient.del('pf:risk:ip_bl:127.0.0.1');
+    await rdsClient.del('pf:risk:captcha_fail:127.0.0.1');
+    await rdsClient.del('pf:whitelist:ip:127.0.0.1');
+    await rdsClient.del('pf:whitelist:device:127.0.0.1');
     // 🆕 清理限流计数器（避免跨运行残留导致测试3/4/14失败）
-    await rds.del('pf:limit:reg_ip:127.0.0.1');
-    await rds.del('pf:limit:ip:127.0.0.1');
+    await rdsClient.del('pf:limit:reg_ip:127.0.0.1');
+    await rdsClient.del('pf:limit:ip:127.0.0.1');
     // 🆕 扫描清理所有 phone 限流 key 和 reg_ip key
     try {
-      for await (const key of rds.scanIterator({ MATCH: 'pf:limit:phone:*', COUNT: 100 })) {
-        await rds.del(key);
+      for await (const key of rdsClient.scanIterator({ MATCH: 'pf:limit:phone:*', COUNT: 100 })) {
+        await rdsClient.del(key);
       }
     } catch {}
     console.log(`  ${colors.green}✓${colors.reset} 已清理 Redis 残留计数`);
   } catch (e) {
     console.log(`  ${colors.yellow}⚠${colors.reset} Redis 清理跳过: ${e.message}`);
-  } finally {
-    if (rds) await rds.quit().catch(() => {});
+  }
+
+  // 🆕 设置测试用风控阈值（确保测试环境一致）
+  try {
+    await api.post('/admin/config/update', { key: 'ip_register_limit', value: '5' }, { headers: { Cookie: adminCookie } });
+    await api.post('/admin/config/update', { key: 'ip_blocklist_ttl_hours', value: '24' }, { headers: { Cookie: adminCookie } });
+    console.log(`  ${colors.green}✓${colors.reset} 风控阈值已设定: ip_register_limit=5, ip_blocklist_ttl_hours=24`);
+  } catch (e) {
+    console.log(`  ${colors.yellow}⚠${colors.reset} 风控阈值设定失败: ${e.message}`);
   }
 
   // 🆕 清理 MySQL 残留白名单 + 黑名单（避免上次运行残留导致风控失效）
@@ -398,24 +426,28 @@ async function test_05_ipTempBlacklist() {
 // 6. 滑块生成 + 正确验证 + Token签发
 // ═══════════════════════════════════════════════════════════════
 async function test_06_captchaGenerateAndVerify() {
-  title('6. 滑块验证码: 生成 + 正确验证 + Token签发');
+  title('6. 滑块验证码: 生成(SVG) + 正确验证 + Token签发');
 
-  // 6.1 生成滑动验证码
+  // 6.1 生成滑动验证码（🆕 不再返回 puzzle.x，改为 SVG 图片）
   const genResp = await api.get('/captcha/generate');
   assert('GET /captcha/generate → HTTP 200', genResp.status === 200);
-  const { captchaId, canvas, puzzle, expiresIn } = genResp.data.data || {};
+  const { captchaId, canvas, puzzle, backgroundSvg, puzzleSvg, expiresIn } = genResp.data.data || {};
 
   assert('返回 captchaId (UUID)', typeof captchaId === 'string' && captchaId.length > 20);
   assert('canvas 280x150', canvas?.width === 280 && canvas?.height === 150);
   assert('puzzle 50x50', puzzle?.width === 50 && puzzle?.height === 50);
-  assert('puzzle.x 在有效范围', puzzle?.x >= 20 && puzzle?.x <= 210);
-  assert('puzzle.y 在有效范围', puzzle?.y >= 5 && puzzle?.y <= 95);
+  assert('返回 backgroundSvg', typeof backgroundSvg === 'string' && backgroundSvg.startsWith('<svg'));
+  assert('返回 puzzleSvg', typeof puzzleSvg === 'string' && puzzleSvg.startsWith('<svg'));
   assert('expiresIn = 60s', expiresIn === 60);
 
-  // 6.2 正确滑块位置验证
+  // 6.2 正确滑块位置验证（🆕 从 Redis 读取正确答案，而非前端 puzzle.x）
+  const answerXStr = await readCaptchaAnswer(captchaId);
+  assert('Redis 中存在正确答案', answerXStr !== null, `answerX=${answerXStr}`);
+
+  const answerX = parseInt(answerXStr, 10);
   const verifyResp = await api.post('/captcha/verify', {
     captchaId,
-    sliderX: puzzle.x  // 精确匹配
+    sliderX: answerX  // 精确匹配
   });
   assert('POST /captcha/verify → HTTP 200', verifyResp.status === 200);
   assert('code=20000 (验证通过)', verifyResp.data.code === 20000);
@@ -432,40 +464,44 @@ async function test_07_captchaTolerance() {
 
   // +3px → 应通过
   const c1 = await api.get('/captcha/generate');
+  const ans1 = await readCaptchaAnswer(c1.data.data.captchaId);
   await sleep(200);  // 避免 globalIpLimiter
   const r1 = await api.post('/captcha/verify', {
     captchaId: c1.data.data.captchaId,
-    sliderX: c1.data.data.puzzle.x + 3
+    sliderX: parseInt(ans1) + 3
   });
   assert('偏差 +3px → 验证通过', r1.data.code === 20000, `code=${r1.data.code}`);
   await sleep(200);
 
   // -4px → 应通过
   const c2 = await api.get('/captcha/generate');
+  const ans2 = await readCaptchaAnswer(c2.data.data.captchaId);
   await sleep(200);
   const r2 = await api.post('/captcha/verify', {
     captchaId: c2.data.data.captchaId,
-    sliderX: c2.data.data.puzzle.x - 4
+    sliderX: parseInt(ans2) - 4
   });
   assert('偏差 -4px → 验证通过', r2.data.code === 20000, `code=${r2.data.code}`);
   await sleep(200);
 
   // -5px (边界) → 应通过
   const c3 = await api.get('/captcha/generate');
+  const ans3 = await readCaptchaAnswer(c3.data.data.captchaId);
   await sleep(200);
   const r3 = await api.post('/captcha/verify', {
     captchaId: c3.data.data.captchaId,
-    sliderX: c3.data.data.puzzle.x - 5
+    sliderX: parseInt(ans3) - 5
   });
   assert('偏差 -5px (边界) → 验证通过', r3.data.code === 20000, `code=${r3.data.code}`);
   await sleep(200);
 
   // +6px → 应拒绝
   const c4 = await api.get('/captcha/generate');
+  const ans4 = await readCaptchaAnswer(c4.data.data.captchaId);
   await sleep(200);
   const r4 = await api.post('/captcha/verify', {
     captchaId: c4.data.data.captchaId,
-    sliderX: c4.data.data.puzzle.x + 6
+    sliderX: parseInt(ans4) + 6
   });
   assert('偏差 +6px → 拒绝 40008', r4.data.code === 40008, `code=${r4.data.code}`);
   await sleep(200);
@@ -488,12 +524,12 @@ async function test_08_captchaExpiry() {
 
   const genResp = await api.get('/captcha/generate');
   const captchaId = genResp.data.data.captchaId;
-  const answerX = genResp.data.data.puzzle.x;
+  const answerX = await readCaptchaAnswer(captchaId);
 
   console.log(`  ${colors.yellow}⏳${colors.reset} 等待 61s 让滑块过期...`);
   await sleep(61000);
 
-  const verifyResp = await api.post('/captcha/verify', { captchaId, sliderX: answerX });
+  const verifyResp = await api.post('/captcha/verify', { captchaId, sliderX: parseInt(answerX) });
   assert('过期后验证拒绝 40007', verifyResp.data.code === 40007, `code=${verifyResp.data.code}`);
 }
 
@@ -551,9 +587,10 @@ async function test_10_captchaTokenOneTime() {
 
   // 10.3 正确流程: 生成滑块 → 验证滑块 → 用 token 注册
   const c = await api.get('/captcha/generate');
+  const ansX = await readCaptchaAnswer(c.data.data.captchaId);
   const v = await api.post('/captcha/verify', {
     captchaId: c.data.data.captchaId,
-    sliderX: c.data.data.puzzle.x
+    sliderX: parseInt(ansX)
   });
   const token = v.data.data?.token || '';
   assert('获取有效 token', v.data.code === 20000, token ? `token=${token.substring(0, 8)}...` : `code=${v.data.code}`);

@@ -232,48 +232,55 @@ async function case07_blockAutoExpire() {
 
 // ────────── 2.3 滑动验证码攻防测试 ──────────
 
-// 用例8：验证码正常生成
+/** 🆕 从 Redis 读取验证码正确答案 */
+async function readCaptchaAnswer(captchaId) {
+  return await getRedisKey(`captcha:answer:${captchaId}`);
+}
+
+// 用例8：验证码正常生成（🆕 返回 SVG 图片，不含 puzzle.x）
 async function case08_captchaGenerate() {
   const resp = await api.get('/captcha/generate');
   const d = resp.data.data || {};
   const hasCaptchaId = typeof d.captchaId === 'string' && d.captchaId.length > 20;
-  const hasPuzzle = d.puzzle && d.puzzle.x !== undefined;
-  const redisHasAnswer = hasCaptchaId && (await getRedisKey(`captcha:answer:${d.captchaId}`)) !== null;
+  const hasSvg = typeof d.backgroundSvg === 'string' && d.backgroundSvg.startsWith('<svg');
+  const hasPuzzle = d.puzzle && d.puzzle.width === 50 && d.puzzle.height === 50;
+  const redisHasAnswer = hasCaptchaId && (await readCaptchaAnswer(d.captchaId)) !== null;
   const pass = record('8. 验证码正常生成',
-    resp.status === 200 && hasCaptchaId && hasPuzzle && redisHasAnswer,
-    `captchaId=${!!d.captchaId} puzzle=${!!d.puzzle} redisAnswer=${redisHasAnswer}`);
+    resp.status === 200 && hasCaptchaId && hasSvg && hasPuzzle && redisHasAnswer,
+    `captchaId=${!!d.captchaId} svg=${hasSvg} puzzle=${!!d.puzzle} redisAnswer=${redisHasAnswer}`);
   return { pass, detail: `captchaId=${d.captchaId?.substring(0,8)}... redisAnswer=${redisHasAnswer}` };
 }
 
-// 用例9：正确位置验证通过
+// 用例9：正确位置验证通过（🆕 从 Redis 读正确答案）
 async function case09_captchaCorrectVerify() {
   const gen = await api.get('/captcha/generate');
   const captchaId = gen.data.data.captchaId;
-  const answerX = gen.data.data.puzzle.x;
-  const resp = await api.post('/captcha/verify', { captchaId, sliderX: answerX });
+  const answerX = await readCaptchaAnswer(captchaId);
+  const resp = await api.post('/captcha/verify', { captchaId, sliderX: parseInt(answerX) });
   const hasToken = resp.data.data?.token && resp.data.data.token.length > 20;
   const pass = record('9. 正确位置验证通过', resp.data.code === 20000 && hasToken,
     `code=${resp.data.code} hasToken=${hasToken}`);
   return { pass, detail: `code=${resp.data.code} token=${resp.data.data?.token?.substring(0,8)}...` };
 }
 
-// 用例10：错误位置验证失败 (±20px)
+// 用例10：错误位置验证失败 (±20px)（🆕 从 Redis 读正确答案后偏移）
 async function case10_captchaWrongPosition() {
   const gen = await api.get('/captcha/generate');
   const captchaId = gen.data.data.captchaId;
-  const answerX = gen.data.data.puzzle.x;
-  const resp = await api.post('/captcha/verify', { captchaId, sliderX: answerX + 20 });
+  const answerX = await readCaptchaAnswer(captchaId);
+  const resp = await api.post('/captcha/verify', { captchaId, sliderX: parseInt(answerX) + 20 });
   const pass = record('10. 错误位置验证失败', resp.status === 400 && resp.data.code === 40008,
     `status=${resp.status} code=${resp.data.code} deviation=${resp.data.data?.deviation}`);
-  return { pass, detail: `sliderX=${answerX+20} → code=${resp.data.code}` };
+  return { pass, detail: `sliderX=${parseInt(answerX)+20} → code=${resp.data.code}` };
 }
 
-// 用例11：token复用攻击
+// 用例11：token复用攻击（🆕 从 Redis 读正确答案）
 async function case11_tokenReuse() {
   // 获取有效token
   const gen = await api.get('/captcha/generate');
   await sleep(200);
-  const ver = await api.post('/captcha/verify', { captchaId: gen.data.data.captchaId, sliderX: gen.data.data.puzzle.x });
+  const ansX = await readCaptchaAnswer(gen.data.data.captchaId);
+  const ver = await api.post('/captcha/verify', { captchaId: gen.data.data.captchaId, sliderX: parseInt(ansX) });
   const token = ver.data.data.token;
 
   // 第1次使用 → 成功
@@ -289,11 +296,11 @@ async function case11_tokenReuse() {
   return { pass, detail: `1st=${r1.data.code} 2nd=${r2.data.code}` };
 }
 
-// 用例12：验证码过期攻击
+// 用例12：验证码过期攻击（🆕 从 Redis 读正确答案）
 async function case12_captchaExpiry() {
   const gen = await api.get('/captcha/generate');
   const captchaId = gen.data.data.captchaId;
-  const answerX = gen.data.data.puzzle.x;
+  const answerX = await readCaptchaAnswer(captchaId);
 
   // 将答案TTL设为2秒
   await setRedisTtl(`captcha:answer:${captchaId}`, 2);
@@ -301,7 +308,7 @@ async function case12_captchaExpiry() {
   // 等待过期
   await sleep(3000);
 
-  const resp = await api.post('/captcha/verify', { captchaId, sliderX: answerX });
+  const resp = await api.post('/captcha/verify', { captchaId, sliderX: parseInt(answerX) });
   const pass = record('12. 验证码过期攻击', resp.data.code === 40007,
     `code=${resp.data.code} (期望 40007)`);
   return { pass, detail: `TTL=2s, wait=3s → code=${resp.data.code}` };

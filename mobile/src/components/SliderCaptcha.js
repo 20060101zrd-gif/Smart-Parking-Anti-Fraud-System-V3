@@ -1,5 +1,6 @@
 // mobile/src/components/SliderCaptcha.js
-// 滑动拼图人机验证组件 — React Native + PanResponder
+// 🆕 v2: 服务端生成 SVG 拼图图片，前端只负责渲染和拖拽
+// answerX 完全不返回前端，真正杜绝自动答题
 // 对接后端 GET /captcha/generate + POST /captcha/verify
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -7,6 +8,7 @@ import {
   View, Text, Animated, PanResponder, StyleSheet,
   ActivityIndicator, Dimensions
 } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import client from '../api/clients';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -20,6 +22,7 @@ const PUZZLE_H = 50;
 // 按屏幕宽度等比例缩放
 const scale = Math.min(1, (SCREEN_WIDTH - 48) / CANVAS_W);
 const CANVAS_SCALED  = CANVAS_W * scale;
+const CANVAS_H_SCALED = CANVAS_H * scale;
 const PUZZLE_W_SCALED = PUZZLE_W * scale;
 const PUZZLE_H_SCALED = PUZZLE_H * scale;
 const SLIDER_MAX_SCALED = CANVAS_SCALED - PUZZLE_W_SCALED;
@@ -27,33 +30,32 @@ const THUMB_W = 46;
 
 export default function SliderCaptcha({ onVerify, onCancel }) {
   // ── 状态 ──────────────────────────────────────────
-  const [captchaId, setCaptchaId]  = useState(null);
-  const [gapX, setGapX]            = useState(0);
-  const [gapY, setGapY]            = useState(0);
-  const [loading, setLoading]      = useState(true);
-  const [verifying, setVerifying]  = useState(false);
-  const [status, setStatus]        = useState('idle');   // idle | dragging | verifying | success | fail | expired
-  const [statusMsg, setStatusMsg]  = useState('加载验证码中...');
-  const [countdown, setCountdown]  = useState(60);
+  const [captchaId, setCaptchaId]   = useState(null);
+  const [backgroundSvg, setBgSvg]   = useState('');
+  const [puzzleSvg, setPzSvg]       = useState('');
+  const [puzzleY, setPuzzleY]       = useState(0);
+  const [loading, setLoading]       = useState(true);
+  const [verifying, setVerifying]   = useState(false);
+  const [status, setStatus]         = useState('idle');
+  const [statusMsg, setStatusMsg]   = useState('加载验证码中...');
+  const [countdown, setCountdown]   = useState(60);
 
   // 用 ref 保存最新状态，避免 PanResponder 闭包过期
   const statusRef     = useRef('idle');
   const verifyingRef  = useRef(false);
   const countdownRef  = useRef(null);
   const captchaIdRef  = useRef(null);
-  const gapXRef       = useRef(0);
   const onVerifyRef   = useRef(onVerify);
 
   useEffect(() => { statusRef.current = status; }, [status]);
   useEffect(() => { verifyingRef.current = verifying; }, [verifying]);
   useEffect(() => { captchaIdRef.current = captchaId; }, [captchaId]);
-  useEffect(() => { gapXRef.current = gapX; }, [gapX]);
   useEffect(() => { onVerifyRef.current = onVerify; }, [onVerify]);
 
   // 滑块位置（拼图块与下方滑块 thumb 共用）
   const sliderX = useRef(new Animated.Value(0)).current;
 
-  // ── 获取验证码 ────────────────────────────────────
+  // ── 获取验证码（🆕 接收 backgroundSvg + puzzleSvg）────
   const fetchCaptcha = useCallback(async () => {
     setLoading(true);
     setStatus('idle');
@@ -71,8 +73,9 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
       if (res.data?.code === 20000) {
         const d = res.data.data;
         setCaptchaId(d.captchaId);
-        setGapX(d.puzzle.x * scale);
-        setGapY(d.puzzle.y * scale);
+        setBgSvg(d.backgroundSvg);
+        setPzSvg(d.puzzleSvg);
+        setPuzzleY((d.puzzleY || 50) * scale);
         setStatusMsg('拖动下方滑块使拼图对准缺口');
         setCountdown(d.expiresIn);
 
@@ -121,8 +124,8 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
 
   const verifyPosition = useCallback(async (xScaled) => {
     const currentCaptchaId = captchaIdRef.current;
-    const currentGapX = gapXRef.current;
-    if (!currentCaptchaId || verifyingRef.current || statusRef.current === 'success' || statusRef.current === 'fail') return;
+    if (!currentCaptchaId || verifyingRef.current ||
+        statusRef.current === 'success' || statusRef.current === 'fail') return;
 
     setVerifying(true);
     setStatus('verifying');
@@ -142,12 +145,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
         // ✅ 验证通过
         setStatus('success');
         setStatusMsg('✅ 验证通过');
-        // 回弹到缺口位置
-        Animated.spring(sliderX, {
-          toValue: currentGapX,
-          useNativeDriver: false,
-          friction: 8
-        }).start();
+        // 停留在当前位置
         // 回调 token
         setTimeout(() => onVerifyRef.current && onVerifyRef.current(res.data.data.token), 600);
       } else {
@@ -204,34 +202,34 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
   // ── 渲染 ──────────────────────────────────────────
   return (
     <View style={styles.wrapper}>
-      {/* 画布区域 */}
+      {/* 🆕 画布区域 — 服务端 SVG 背景（含缺口） */}
       <View style={[styles.canvas, { width: CANVAS_SCALED + 4 }]}>
-        {/* 背景 */}
-        <View style={[styles.canvasBg, { width: CANVAS_SCALED }]}>
-          <Text style={styles.canvasLabel}>滑动拼图验证</Text>
-          {/* 缺口标记 */}
-          <View style={[styles.gap, {
-            left:   gapX,
-            top:    gapY,
-            width:  PUZZLE_W_SCALED,
-            height: PUZZLE_H_SCALED
-          }]} />
+        <View style={[styles.canvasSvgArea, { width: CANVAS_SCALED, height: CANVAS_H_SCALED }]}>
+          {backgroundSvg ? (
+            <SvgXml xml={backgroundSvg} width={CANVAS_SCALED} height={CANVAS_H_SCALED} />
+          ) : (
+            <View style={styles.canvasPlaceholder}>
+              <Text style={styles.canvasLabel}>加载中...</Text>
+            </View>
+          )}
         </View>
 
-        {/* 可拖动的拼图块（跟随下方滑块） */}
-        <Animated.View
-          style={[
-            styles.puzzlePiece,
-            {
-              top:    gapY,
-              width:  PUZZLE_W_SCALED,
-              height: PUZZLE_H_SCALED,
-              transform: [{ translateX: sliderX }]
-            }
-          ]}
-        >
-          <Text style={styles.puzzleIcon}>🧩</Text>
-        </Animated.View>
+        {/* 🆕 可拖动的拼图块（SvgXml 渲染，跟随滑块） */}
+        {puzzleSvg ? (
+          <Animated.View
+            style={[
+              styles.puzzleWrapper,
+              {
+                top:    puzzleY,
+                width:  PUZZLE_W_SCALED,
+                height: PUZZLE_H_SCALED,
+                transform: [{ translateX: sliderX }]
+              }
+            ]}
+          >
+            <SvgXml xml={puzzleSvg} width={PUZZLE_W_SCALED} height={PUZZLE_H_SCALED} />
+          </Animated.View>
+        ) : null}
       </View>
 
       {/* 滑轨 + 进度 + thumb */}
@@ -302,7 +300,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#f9fafb',
   },
-  canvasBg: {
+  canvasSvgArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  canvasPlaceholder: {
     flex: 1,
     backgroundColor: '#e5e7eb',
     justifyContent: 'center',
@@ -314,34 +317,15 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
 
-  // 缺口
-  gap: {
-    position: 'absolute',
-    borderWidth: 2,
-    borderColor: '#6366f1',
-    borderStyle: 'dashed',
-    borderRadius: 4,
-    backgroundColor: 'rgba(99,102,241,0.08)',
-  },
-
-  // 拼图块（跟随滑块）
-  puzzlePiece: {
+  // 拼图块 wrapper（绝对定位，跟随滑块 X 平移）
+  puzzleWrapper: {
     position: 'absolute',
     left: 0,
-    backgroundColor: '#6366f1',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-    borderWidth: 2,
-    borderColor: '#4f46e5',
-  },
-  puzzleIcon: {
-    fontSize: 20,
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 6,
   },
 
   // 滑轨

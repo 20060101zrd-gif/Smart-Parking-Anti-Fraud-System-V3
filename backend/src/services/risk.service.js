@@ -12,7 +12,7 @@ class RiskService {
   constructor() {
     this.BLACKLIST_TTL_SECONDS = 90 * 24 * 60 * 60; // 90天 (7776000秒)
     // ── IP临时黑名单 & 验证失败追踪 ──
-    this.IP_BLACKLIST_TTL = 24 * 60 * 60;            // 24小时封禁
+    this.IP_BLACKLIST_TTL = 60;                       // 默认 1 分钟封禁（可通过面板调整 ip_blocklist_ttl_hours）
     this.CAPTCHA_FAIL_WINDOW = 10 * 60;              // 10分钟失败计数窗口
     this.CAPTCHA_FAIL_MAX = 3;                       // 连续失败3次触发拉黑
     // 🆕 内存降级（Redis 不可用时）
