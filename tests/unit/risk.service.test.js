@@ -229,18 +229,29 @@ describe('RiskService', () => {
 
   describe('cancelAccount — 注销沉淀', () => {
     it('注销后应写入 Redis 黑名单', async () => {
+      // 🆕 device_cancel_limit=2：第一次注销只拉黑 phone_hash，不拉黑设备
       const result = await RiskService.cancelAccount(
         '13800138000', '1.2.3.4', 'device-001',
       );
 
       expect(result).toBe(true);
-      // 应写入 phone_hash 黑名单
+      // 应写入 phone_hash 黑名单（每次注销都拉黑）
       expect(mockRedis.set).toHaveBeenCalledWith(
         expect.stringContaining('risk:hash_bl:'),
         expect.any(String),
         expect.any(Number),
       );
-      // 应写入设备黑名单
+      // 第一次注销不应写入设备黑名单（device_cancel_limit=2，1<2）
+    });
+
+    it('第2次注销后应写入设备黑名单', async () => {
+      // 第一个 incr 给 IP 频控（返1），第二个 incr 给设备计数（返2）
+      mockRedis.incr.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+      const result = await RiskService.cancelAccount(
+        '13800138001', '1.2.3.4', 'device-001',
+      );
+
+      expect(result).toBe(true);
       expect(mockRedis.set).toHaveBeenCalledWith(
         expect.stringContaining('risk:device_bl:'),
         '1',

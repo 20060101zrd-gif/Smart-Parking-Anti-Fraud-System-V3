@@ -242,12 +242,10 @@ class RiskService {
               await redisClient.expire(cancelCountKey, this.BLACKLIST_TTL_SECONDS);
             }
           }
-          if (currentCancelCount > cancelLimit) {
-            logger.warn({ deviceId: deviceId.substring(0, 16), cancelCount: currentCancelCount, limit: cancelLimit, ip: ipAddress }, '高风险拦截 → 设备注销次数超限，同步拉黑设备');
-            interceptLog.logIntercept(ipAddress, deviceId, `设备注销次数超限 (${currentCancelCount}/${cancelLimit})`, 'HIGH');
-            // 🆕 超限时先拉黑设备，再拒绝本次注销
-            await this._blacklistDevice(deviceId, deviceId, '注销次数超限自动拉黑');
-            throw this._buildBizError(403, 40301, '注销失败：注销次数已达上限，无法继续注销');
+          // 🆕 注销次数达到上限时自动拉黑设备（不拦截本次注销，仅阻止未来注册）
+          if (currentCancelCount >= cancelLimit) {
+            logger.warn({ deviceId: deviceId.substring(0, 16), cancelCount: currentCancelCount, limit: cancelLimit, ip: ipAddress }, '设备注销次数达标 → 自动拉黑设备');
+            await this._blacklistDevice(deviceId, deviceId, '注销次数达标自动拉黑');
           }
         } catch (err) {
           if (err.isBusinessError) throw err;
@@ -275,12 +273,7 @@ class RiskService {
       console.log(`[RiskService] ⚠️ Redis 不可用，内存标记 phone_hash=${phoneHash.substring(0, 12)}...`);
     }
 
-    // 🆕 4.1 仅在注销次数达到上限时才拉黑设备指纹（未达上限时允许反复注销不拉黑）
-    if (deviceId && currentCancelCount >= cancelLimit) {
-      await this._blacklistDevice(deviceId, phoneHash, '用户注销账号自动拉黑');
-      console.log(`[RiskService] 设备指纹已拉黑 deviceId=${deviceId.substring(0, 16)}... (${currentCancelCount}/${cancelLimit})`);
-    }
-    
+
     // 5. 双写策略：写入 MySQL 归档层（phone_hash 精确匹配）
     try {
       // 写入风险哈希归档表（保留fingerprint用于旧逻辑兼容，存储phone_hash用于快速匹配）
