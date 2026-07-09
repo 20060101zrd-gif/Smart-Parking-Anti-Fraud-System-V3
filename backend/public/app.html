@@ -124,10 +124,12 @@
           <p class="text-xs text-gray-500 font-semibold mb-2">原因说明</p>
           <p class="text-sm text-gray-600 mb-5" id="blocked-reason"></p>
         </div>
-        <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-5">
+        <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-3">
           <p class="text-xs text-gray-500" id="blocked-hint">请于 90 天后重新尝试</p>
+          <p id="blocked-timer" class="text-sm font-bold text-red-600 hidden mt-1"></p>
         </div>
-        <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm">返回首页</button>
+        <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm mb-2">返回首页</button>
+        <button id="blocked-retry-btn" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-semibold text-sm hidden" onclick="goRegister()">重新尝试</button>
       </div>
 
       <!-- Loading overlay -->
@@ -175,6 +177,7 @@ function regError(m) { const e = document.getElementById('register-error'); e.te
 
 // ── Logout → Register ──
 function goRegister() {
+  stopBlockCountdown();
   localStorage.removeItem('parking_user');
   _phone = ''; _name = '';
   document.getElementById('phone').value = '';
@@ -193,6 +196,38 @@ function goCancel() {
 
 // ── Back to Home ──
 function goHome() { showPage('home'); }
+
+// ── Blocked page countdown ──
+let blockCountdownId = null;
+function startBlockCountdown(seconds) {
+  stopBlockCountdown();
+  const timerEl = document.getElementById('blocked-timer');
+  const retryBtn = document.getElementById('blocked-retry-btn');
+  if (!timerEl || !retryBtn) return;
+  let remaining = seconds;
+  timerEl.classList.remove('hidden');
+  retryBtn.classList.add('hidden');
+  function tick() {
+    if (remaining <= 0) {
+      timerEl.textContent = '封禁已到期，可以重试';
+      retryBtn.classList.remove('hidden');
+      return;
+    }
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    timerEl.textContent = '剩余 ' + (m > 0 ? m + '分' : '') + s + '秒 自动解封';
+    remaining--;
+    blockCountdownId = setTimeout(tick, 1000);
+  }
+  tick();
+}
+function stopBlockCountdown() {
+  if (blockCountdownId) { clearTimeout(blockCountdownId); blockCountdownId = null; }
+  const t = document.getElementById('blocked-timer');
+  if (t) { t.classList.add('hidden'); t.textContent = ''; }
+  const b = document.getElementById('blocked-retry-btn');
+  if (b) b.classList.add('hidden');
+}
 
 // ═══════════════ REGISTER ═══════════════
 async function handleRegister() {
@@ -227,7 +262,8 @@ async function doRegister(captchaToken) {
       if (msg.includes('关联账号已超限')) {
         document.getElementById('blocked-hint').textContent = '可注销旧账号释放名额后重新注册';
       } else if (d.code === 40302) {
-        document.getElementById('blocked-hint').textContent = '请于 1 分钟后重新尝试';
+        document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
+        startBlockCountdown(60);
       } else {
         document.getElementById('blocked-hint').textContent = '请于 90 天后重新尝试';
       }
@@ -425,10 +461,11 @@ async function verifyCaptcha(sliderX) {
       document.getElementById('captcha-hint').textContent = '✅ 验证通过';
       doRegister(v.data.token);
     } else if (v.code === 40302) {
-      // 🆕 IP 被封
+      // 🆕 IP 被封 → 显示带倒计时的封禁页
       document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
-      document.getElementById('blocked-hint').textContent = '请于 1 分钟后重新尝试';
+      document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
       showPage('blocked');
+      startBlockCountdown(60);
     } else {
       const failCount = (v.data && v.data.failCount) || 0;
       document.getElementById('cap-status').textContent = '❌ 验证失败 (' + failCount + '/3)，请重试';
