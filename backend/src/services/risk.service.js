@@ -194,7 +194,7 @@ class RiskService {
     if (await whitelistService.isWhitelisted(ipAddress, deviceId)) {
       console.log(`[RiskService] ⬜ 白名单放行 cancel ip=${ipAddress} deviceId=${(deviceId || '').substring(0, 12)}...`);
     } else {
-      // 🛡️ 1. 滑动窗口限流防线：同一 IP 10 分钟内最多允许 4 次注销请求
+      // 🛡️ 1. 滑动窗口限流防线：同一 IP 10 分钟内最多允许 20 次注销请求
       const rateLimitKey = `risk:ratelimit:cancel:${ipAddress}`;
 
       // 🆕 Redis 降级 → 内存计数器
@@ -207,9 +207,9 @@ class RiskService {
           entry.count++;
         }
         this._memCancelCount.set(ipAddress, entry);
-        if (entry.count > 4) {
+        if (entry.count > 20) {
           console.warn(`[RiskService] 拦截请求，封堵 IP: ${ipAddress} [内存]`);
-          interceptLog.logIntercept(ipAddress, deviceId, '注销请求频率超限（10分钟>4次）', 'MEDIUM');
+          interceptLog.logIntercept(ipAddress, deviceId, '注销请求频率超限（10分钟>20次）', 'MEDIUM');
           throw this._buildBizError(429, 42900, '操作过于频繁，触发安全熔断，请稍后再试');
         }
       } else {
@@ -217,9 +217,9 @@ class RiskService {
         if (requestCount === 1) {
           await redisClient.expire(rateLimitKey, 600);
         }
-        if (requestCount > 4) {
+        if (requestCount > 20) {
           console.warn(`[RiskService] 拦截到异常注入攻击，封堵 IP: ${ipAddress}`);
-          interceptLog.logIntercept(ipAddress, deviceId, '注销请求频率超限（10分钟>4次）', 'MEDIUM');
+          interceptLog.logIntercept(ipAddress, deviceId, '注销请求频率超限（10分钟>20次）', 'MEDIUM');
           throw this._buildBizError(429, 42900, '操作过于频繁，触发安全熔断，请稍后再试');
         }
       }
