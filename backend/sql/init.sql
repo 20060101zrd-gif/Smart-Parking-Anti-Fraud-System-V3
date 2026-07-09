@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS sys_whitelist (
 -- 11. 默认风控配置种子数据
 INSERT IGNORE INTO sys_config (config_key, config_value) VALUES
 ('device_register_limit', '3'),
+('device_cancel_limit', '1'),
 ('ip_register_limit', '5'),
 ('captcha_fail_max', '3'),
 ('ip_blocklist_ttl_hours', '24'),

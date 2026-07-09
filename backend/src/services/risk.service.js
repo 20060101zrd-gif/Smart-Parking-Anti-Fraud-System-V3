@@ -186,7 +186,7 @@ class RiskService {
    * @param {String} deviceId  设备指纹（可选，用于同步拉黑设备）
    */
   async cancelAccount(phone, ipAddress = 'unknown_ip', deviceId = '') {
-    // ⬜ 白名单放行：IP/设备在白名单中，跳过注销频控
+    // ⬜ 白名单放行：IP/设备在白名单中，跳过注销频控和注销次数限制
     if (await whitelistService.isWhitelisted(ipAddress, deviceId)) {
       console.log(`[RiskService] ⬜ 白名单放行 cancel ip=${ipAddress} deviceId=${(deviceId || '').substring(0, 12)}...`);
     } else {
@@ -219,9 +219,38 @@ class RiskService {
           throw this._buildBizError(429, 42900, '操作过于频繁，触发安全熔断，请稍后再试');
         }
       }
+
+      // 🆕 2. 设备注销次数上限检查（从风控规则配置面板动态读取）
+      if (deviceId) {
+        try {
+          const cfg = await configService.getAll();
+          const cancelLimit = cfg.device_cancel_limit || 1;
+          const cancelCountKey = `risk:cancel_count:device:${deviceId}`;
+          let currentCancelCount;
+          if (!redisClient.isReady) {
+            const entry = this._memCancelCount.get(`device:${deviceId}`) || { count: 0 };
+            entry.count++;
+            this._memCancelCount.set(`device:${deviceId}`, entry);
+            currentCancelCount = entry.count;
+          } else {
+            currentCancelCount = await redisClient.incr(cancelCountKey);
+            if (currentCancelCount === 1) {
+              await redisClient.expire(cancelCountKey, this.BLACKLIST_TTL_SECONDS);
+            }
+          }
+          if (currentCancelCount > cancelLimit) {
+            logger.warn({ deviceId: deviceId.substring(0, 16), cancelCount: currentCancelCount, limit: cancelLimit, ip: ipAddress }, '中风险拦截 → 设备注销次数超限');
+            interceptLog.logIntercept(ipAddress, deviceId, `设备注销次数超限 (${currentCancelCount}/${cancelLimit})`, 'MEDIUM');
+            throw this._buildBizError(403, 40301, '注销失败：当前设备注销次数已达上限（可在管理后台调整），无法继续注销');
+          }
+        } catch (err) {
+          if (err.isBusinessError) throw err;
+          logger.warn({ err: err.message }, '设备注销计数查询失败，降级放行');
+        }
+      }
     }
 
-    // 2. 生成快速 SHA-256 持久化指纹（避免 Argon2id 阻塞事件循环）
+    // 3. 生成快速 SHA-256 持久化指纹（避免 Argon2id 阻塞事件循环）
     const crypto = require('crypto');
     const factor = CryptoUtil.buildUserFactor(phone, deviceId || '');
     const fingerprint = crypto.createHash('sha256').update(factor).digest('hex');
@@ -230,7 +259,7 @@ class RiskService {
     
     await redisClient.del(`user:registered:${phone}`);
     
-    // 3. 双写策略：Redis 高速拦截层使用 phone_hash 作为 key
+    // 4. 双写策略：Redis 高速拦截层使用 phone_hash 作为 key
     const probeKey = `risk:hash_bl:${phoneHash}`;
     const redisBlOk = await redisClient.set(probeKey, fingerprint, this.BLACKLIST_TTL_SECONDS);
 
@@ -240,7 +269,7 @@ class RiskService {
       console.log(`[RiskService] ⚠️ Redis 不可用，内存标记 phone_hash=${phoneHash.substring(0, 12)}...`);
     }
 
-    // 🆕 3.1 同步拉黑设备指纹，90天内该设备无法重新注册
+    // 🆕 4.1 同步拉黑设备指纹，90天内该设备无法重新注册
     if (deviceId) {
       const devOk = await redisClient.set(`risk:device_bl:${deviceId}`, '1', this.BLACKLIST_TTL_SECONDS);
       if (!devOk) {
@@ -259,7 +288,7 @@ class RiskService {
       console.log(`[RiskService] 设备指纹已同步拉黑 deviceId=${deviceId.substring(0, 16)}...`);
     }
     
-    // 4. 双写策略：写入 MySQL 归档层（phone_hash 精确匹配）
+    // 5. 双写策略：写入 MySQL 归档层（phone_hash 精确匹配）
     try {
       // 写入风险哈希归档表（保留fingerprint用于旧逻辑兼容，存储phone_hash用于快速匹配）
       await db.run(

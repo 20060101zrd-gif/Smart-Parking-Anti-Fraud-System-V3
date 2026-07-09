@@ -421,7 +421,7 @@ async function loadOverview(){
 }
 
 // ── Config ──
-const CONFIG_LABELS={device_register_limit:'单设备注册上限',ip_register_limit:'IP每分钟注册上限',captcha_fail_max:'验证码失败触发封禁次数',ip_blocklist_ttl_hours:'IP黑名单有效期(小时)',device_blacklist_ttl_days:'设备黑名单有效期(天)',hash_archive_ttl_days:'注销沉淀库有效期(天)',captcha_answer_ttl_sec:'验证码有效期(秒)',captcha_token_ttl_sec:'验证Token有效期(秒)'};
+const CONFIG_LABELS={device_register_limit:'单设备注册上限',device_cancel_limit:'单设备注销上限',ip_register_limit:'IP每分钟注册上限',captcha_fail_max:'验证码失败触发封禁次数',ip_blocklist_ttl_hours:'IP黑名单有效期(小时)',device_blacklist_ttl_days:'设备黑名单有效期(天)',hash_archive_ttl_days:'注销沉淀库有效期(天)',captcha_answer_ttl_sec:'验证码有效期(秒)',captcha_token_ttl_sec:'验证Token有效期(秒)'};
 
 async function loadConfig(){
   const r=await api('/config');if(r.code!==20000)return;

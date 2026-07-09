@@ -88,7 +88,7 @@ async function run(){
   // 6. 风控规则查询
   console.log(`\n${B}─── 6. 风控规则查询${Z}`);
   const r6=await api.get('/config',{headers:{Cookie:cookies}});
-  const keys6=['device_register_limit','ip_register_limit','captcha_fail_max','ip_blocklist_ttl_hours'];
+  const keys6=['device_register_limit','device_cancel_limit','ip_register_limit','captcha_fail_max','ip_blocklist_ttl_hours'];
   const cfgOk=r6.data.code===20000&&keys6.every(k=>r6.data.data&&r6.data.data[k]!==undefined);
   record('风控规则查询',cfgOk,cfgOk?`${keys6.length}项阈值已返回`:`code=${r6.data.code}`);
 

@@ -211,8 +211,16 @@ async function doRegister(captchaToken) {
       resetCaptcha();
       showPage('captcha');
     } else if (d.code === 40300 || d.code === 40301 || d.code === 40302) {
-      document.getElementById('blocked-reason').textContent = d.message || '检测到历史注销记录，90天内无法再次领取';
-      document.getElementById('blocked-hint').textContent = '请于 90 天后重新尝试';
+      const msg = d.message || '';
+      document.getElementById('blocked-reason').textContent = msg || '检测到历史注销记录，90天内无法再次领取';
+      // 区分：设备注册超限 vs 黑名单封禁
+      if (msg.includes('关联账号已超限')) {
+        document.getElementById('blocked-hint').textContent = '可注销旧账号释放名额后重新注册';
+      } else if (d.code === 40302) {
+        document.getElementById('blocked-hint').textContent = '请于 24 小时后重新尝试';
+      } else {
+        document.getElementById('blocked-hint').textContent = '请于 90 天后重新尝试';
+      }
       showPage('blocked');
     } else {
       regError(d.message || '注册失败，请重试');

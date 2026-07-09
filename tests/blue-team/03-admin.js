@@ -70,7 +70,7 @@ async function run(){
   console.log(`\n${B}─── 5. 风控规则读取${Z}`);
   const r5=await api.get('/config',{headers:{Cookie:adminCookies.map(c=>c.split(';')[0]).join('; ')}});
   const d5=r5.data.data||{};
-  const keys5=['device_register_limit','ip_register_limit','captcha_fail_max','ip_blocklist_ttl_hours'];
+  const keys5=['device_register_limit','device_cancel_limit','ip_register_limit','captcha_fail_max','ip_blocklist_ttl_hours'];
   const cfgOk=r5.data.code===20000 && keys5.every(k=>d5[k]!==undefined);
   record('风控规则读取成功', cfgOk, cfgOk?`${keys5.length}项阈值均已返回`:`code=${r5.data.code} keys=${Object.keys(d5).length}`);
 
