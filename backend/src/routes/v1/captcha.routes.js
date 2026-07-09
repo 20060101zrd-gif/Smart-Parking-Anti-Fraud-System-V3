@@ -17,6 +17,7 @@ const ipBlacklist    = rateLimiter('ip_bl');        // IP临时黑名单检查
  */
 router.get(
   '/generate',
+  ipBlacklist,       // 🆕 封禁 IP 直接返回 40302，前端直接显示倒计时
   globalIpLimiter,
   captchaController.generate
 );

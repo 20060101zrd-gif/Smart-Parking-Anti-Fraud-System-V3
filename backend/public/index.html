@@ -34,7 +34,7 @@
     .bl-table tr:hover td{background:#f8fafc}
     /* 🆕 刷新按钮旋转动画 */
     @keyframes spin{to{transform:rotate(360deg)}}
-    .animate-spin{animation:spin .6s linear infinite}
+    .animate-spin{animation:spin .6s linear infinite;transform-origin:center}
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex">
@@ -331,17 +331,22 @@ function toast(msg,ok=true){
 
 // 🆕 刷新按钮包装器：旋转图标 + 加载反馈
 function withSpin(el,fn){
-  var svg=el.querySelector('svg');if(svg)svg.classList.add('animate-spin');
-  el.style.opacity='0.5';
+  var svg=el.querySelector('svg'),btn=el;
+  if(svg)svg.classList.add('animate-spin');
+  btn.style.opacity='0.4';btn.style.pointerEvents='none';
+  var started=Date.now();
+  var done=function(){
+    var elapsed=Date.now()-started,minWait=elapsed<300?300-elapsed:0;
+    setTimeout(function(){
+      if(svg)svg.classList.remove('animate-spin');
+      btn.style.opacity='';btn.style.pointerEvents='';
+    },minWait);
+  };
   try{
     var p=fn();
-    var done=function(){
-      if(svg)svg.classList.remove('animate-spin');
-      el.style.opacity='';
-    };
-    if(p&&p.then)p.then(done).catch(function(){done();toast('刷新失败，请检查网络',false)});
+    if(p&&p.then)p.then(done).catch(function(){done();toast('刷新失败',false)});
     else done();
-  }catch(e){el.style.opacity='';if(svg)svg.classList.remove('animate-spin');toast('刷新失败',false)}
+  }catch(e){done();toast('刷新失败',false)}
 }
 
 function switchPage(p){
@@ -866,7 +871,8 @@ function usersPage(d){
   usersCurPage=Math.max(1,usersCurPage+d);
   loadUsers(usersCurPage);
 }
-
+
+
 
 // Real-time clock
 function updateClock(){
