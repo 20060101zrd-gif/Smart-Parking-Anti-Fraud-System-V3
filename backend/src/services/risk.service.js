@@ -323,12 +323,15 @@ class RiskService {
       entry.count++;
       this._memCaptchaFail.set(ip, entry);
       const c = entry.count;
-      console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${c}/${captchaFailMax}) [内存]`);
-      if (c >= captchaFailMax) {
-        this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${c}`, ipBlTtl);
-        interceptLog.logIntercept(ip, '', `连续${c}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
-      }
-      return c;
+  console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${c}/${captchaFailMax}) [内存]`);
+  if (c >= captchaFailMax) {
+    this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${c}`, ipBlTtl);
+    // 🆕 清除计数器，解封后给用户一个干净的起点
+    this._memCaptchaFail.delete(ip);
+    this._memIpBl.delete(`limit:reg_ip:${ip}`);
+    interceptLog.logIntercept(ip, '', `连续${c}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
+  }
+  return c;
     }
 
     const failKey = `risk:captcha_fail:${ip}`;
@@ -342,7 +345,10 @@ class RiskService {
       console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${count}/${captchaFailMax})`);
       if (count >= captchaFailMax) {
         await redisClient.set(`risk:ip_bl:${ip}`, `captcha_fail_x${count}`, ipBlTtl);
-        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已自动加入临时黑名单`);
+        // 🆕 清除验证失败计数和注册频控计数，解封后给用户一个干净的起点
+        await redisClient.del(`risk:captcha_fail:${ip}`);
+        await redisClient.del(`limit:reg_ip:${ip}`);
+        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已自动加入临时黑名单（计数器已清零）`);
         interceptLog.logIntercept(ip, '', `连续${count}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
       }
       return count;
@@ -374,7 +380,12 @@ class RiskService {
     // 🆕 内存降级清理
     this._memIpBl.delete(`ipbl:${ip}`);
     const deleted = await redisClient.del(`risk:ip_bl:${ip}`);
-    console.log(`[RiskService] 🔓 IP 临时黑名单已解除: ${ip}`);
+    // 🆕 同步清零相关计数器，解封后给用户干净起点
+    await redisClient.del(`risk:captcha_fail:${ip}`);
+    await redisClient.del(`limit:reg_ip:${ip}`);
+    this._memCaptchaFail.delete(ip);
+    this._memCancelCount.delete(ip);
+    console.log(`[RiskService] 🔓 IP 临时黑名单已解除 (计数器已清零): ${ip}`);
     return deleted;
   }
 
