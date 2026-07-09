@@ -78,22 +78,22 @@ class ConfigService {
         console.error('[ConfigService] Redis 缓存清除失败:', e.message);
       }
 
-      // 🆕 修改 device_cancel_limit 时自动清零所有设备注销计数器
+      // 🆕 修改 device_cancel_limit 时自动清零所有注销相关计数器
       if (key === 'device_cancel_limit') {
-        try {
-          const keys = await redisClient.scanKeys('risk:cancel_count:device:*');
-          if (keys.length > 0) {
-            // 去掉 prefix 前缀后逐个删除（del 方法内部会再加前缀）
-            for (const fullKey of keys) {
-              const shortKey = fullKey.replace(/^pf:/, '');
-              await redisClient.del(shortKey);
+        const patterns = ['risk:cancel_count:device:*', 'risk:ratelimit:cancel:*'];
+        for (const pattern of patterns) {
+          try {
+            const keys = await redisClient.scanKeys(pattern);
+            if (keys.length > 0) {
+              for (const fullKey of keys) {
+                const shortKey = fullKey.replace(/^pf:/, '');
+                await redisClient.del(shortKey);
+              }
+              console.log(`[ConfigService] 已清零 ${keys.length} 个 ${pattern} 计数器`);
             }
-            console.log(`[ConfigService] 已清零 ${keys.length} 个设备注销计数器`);
-          } else {
-            console.log('[ConfigService] 无设备注销计数器需要清零');
+          } catch (e) {
+            console.error(`[ConfigService] 清零 ${pattern} 失败:`, e.message);
           }
-        } catch (e) {
-          console.error('[ConfigService] 清零设备注销计数器失败:', e.message);
         }
       }
     }
