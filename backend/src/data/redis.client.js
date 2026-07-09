@@ -30,6 +30,7 @@ class RedisWrapper {
     this.client.on('connect', () => console.log('⏳ [Redis] 正在连接...'));
     this.client.on('ready', () => {
       this.isReady = true;
+      this._memDelSet.clear(); // Redis 恢复后清空内存删除标记，避免永久绕过缓存
       this._clearReconnectTimer();
       console.log('✅ [Redis] 连接成功，缓存服务已就绪');
     });
@@ -141,7 +142,8 @@ class RedisWrapper {
   }
 
   async get(key) {
-    if (this._memDelSet.has(key)) return null; // 内存标记优先：该 key 已被 del() 清理过
+    // 仅 Redis 不可用时，用内存标记兜底（Redis 就绪后已清空 _memDelSet）
+    if (!this.isReady && this._memDelSet.has(key)) return null;
     if (!this.isReady) return null;
     const fullKey = `${this.prefix}${key}`;
     return this._withTimeout(this.client.get(fullKey), null);
