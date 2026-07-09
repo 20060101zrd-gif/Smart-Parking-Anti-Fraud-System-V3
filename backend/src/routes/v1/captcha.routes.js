@@ -7,6 +7,7 @@ const captchaController = require('../../controllers/captcha.controller');
 const rateLimiter = require('../../middlewares/rateLimiter');
 
 const globalIpLimiter = rateLimiter('global_ip');   // 单 IP 10次/秒
+const ipBlacklist    = rateLimiter('ip_bl');        // IP临时黑名单检查
 
 /**
  * @route   GET /api/v1/captcha/generate
@@ -29,6 +30,7 @@ router.get(
  */
 router.post(
   '/verify',
+  ipBlacklist,       // 🆕 IP 临时黑名单中的禁止验证
   globalIpLimiter,
   captchaController.verify
 );

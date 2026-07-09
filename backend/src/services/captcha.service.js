@@ -62,16 +62,10 @@ class CaptchaService {
    * answerX/answerY 仅用于渲染缺口位，不会返回给前端
    */
   _generateBackgroundSvg(captchaId, answerX, answerY) {
-    const noise = this._generateNoise(`bg_${captchaId}`, 18, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    const pattern = this._generatePattern(captchaId, 0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}">
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#e2e8f0"/>
-      <stop offset="100%" style="stop-color:#f1f5f9"/>
-    </linearGradient>
-  </defs>
-  <rect width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="url(#bgGrad)"/>
-  ${noise}
+  <rect width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="#e2e8f0"/>
+  ${pattern}
   <text x="${Math.floor(this.CANVAS_WIDTH / 2)}" y="18" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">滑动拼图验证</text>
   <!-- 缺口：白色镂空 + 虚线边框 -->
   <rect x="${answerX}" y="${answerY}" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#f8fafc" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
@@ -79,32 +73,56 @@ class CaptchaService {
   }
 
   /**
-   * 🆕 生成拼图块 SVG
-   * 拼图块内含与缺口位一致的背景噪声（视觉上对齐后融为一体）
+   * 🆕 生成拼图块 SVG（与缺口位背景图案一致，对齐后融为一体）
    */
   _generatePuzzleSvg(captchaId, answerX, answerY) {
-    const fullNoise = this._generateNoise(`bg_${captchaId}`, 18, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
-    // 只取缺口范围内的噪声点，坐标偏移到拼图块本地空间
-    let pieceNoise = '';
-    const hash = crypto.createHash('sha256').update(`bg_${captchaId}`).digest('hex');
-    for (let i = 0; i < 18; i++) {
-      const cx = parseInt(hash.substring(i * 6, i * 6 + 3), 16) % this.CANVAS_WIDTH;
-      const cy = parseInt(hash.substring(i * 6 + 3, i * 6 + 6), 16) % this.CANVAS_HEIGHT;
-      // 只保留在缺口范围内的点
-      if (cx >= answerX && cx < answerX + this.PUZZLE_WIDTH &&
-          cy >= answerY && cy < answerY + this.PUZZLE_HEIGHT) {
-        const r = (parseInt(hash.charAt(i % 64), 16) % 3) + 2;
-        const shade = parseInt(hash.substring((i * 2) % 56, (i * 2) % 56 + 2), 16) % 50 + 180;
-        pieceNoise += `<circle cx="${cx - answerX}" cy="${cy - answerY}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.7"/>`;
+    const pattern = this._generatePattern(captchaId, answerX, answerY, this.PUZZLE_WIDTH, this.PUZZLE_HEIGHT);
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}">
+  ${pattern}
+  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#6366f1" stroke-width="2" rx="4"/>
+</svg>`;
+  }
+
+  /**
+   * 🆕 生成确定性背景图案（背景与拼图块共享同一算法）
+   */
+  _generatePattern(captchaId, x, y, width, height) {
+    const hash = crypto.createHash('sha256').update(captchaId).digest('hex');
+    const cellSize = 10;
+    const cols = Math.ceil(this.CANVAS_WIDTH / cellSize);
+    let shapes = '';
+
+    // 网格色块（与缺口位置完全匹配）
+    for (let gy = Math.floor(y / cellSize); gy <= Math.floor((y + height) / cellSize); gy++) {
+      for (let gx = Math.floor(x / cellSize); gx <= Math.floor((x + width) / cellSize); gx++) {
+        const cx = gx * cellSize;
+        const cy = gy * cellSize;
+        const rx = Math.max(x - cx, 0);
+        const ry = Math.max(y - cy, 0);
+        const rw = Math.min(cellSize - rx, x + width - cx - rx);
+        const rh = Math.min(cellSize - ry, y + height - cy - ry);
+        if (rw <= 0 || rh <= 0) continue;
+
+        const idx = ((gy * cols + gx) * 2) % 64;
+        const shade = parseInt(hash.substr(idx, 2), 16) % 40 + 200;
+        const lx = cx + rx - x;
+        const ly = cy + ry - y;
+        shapes += `<rect x="${lx}" y="${ly}" width="${rw}" height="${rh}" fill="rgb(${shade},${shade+5},${shade+10})"/>`;
       }
     }
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}">
-  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#6366f1" rx="6"/>
-  <rect x="2" y="2" width="${this.PUZZLE_WIDTH - 4}" height="${this.PUZZLE_HEIGHT - 4}" fill="#e2e8f0" rx="4"/>
-  ${pieceNoise}
-  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#4f46e5" stroke-width="2" rx="6"/>
-</svg>`;
+    // 随机噪声点（与缺口位置完全匹配）
+    for (let i = 0; i < 15; i++) {
+      const cx = parseInt(hash.substr(i * 4, 3), 16) % this.CANVAS_WIDTH;
+      const cy = parseInt(hash.substr(i * 4 + 3, 3), 16) % this.CANVAS_HEIGHT;
+      const r = (parseInt(hash.charAt(i * 2), 16) % 3) + 2;
+      if (cx >= x && cx < x + width && cy >= y && cy < y + height) {
+        const shade = parseInt(hash.substr((i * 2 + 32) % 64, 2), 16) % 50 + 160;
+        shapes += `<circle cx="${cx - x}" cy="${cy - y}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.7"/>`;
+      }
+    }
+
+    return shapes;
   }
 
   // ─── 核心业务 ─────────────────────────────────────────
