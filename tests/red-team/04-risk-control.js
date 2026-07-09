@@ -96,26 +96,37 @@ async function case02_mediumRiskCaptcha() {
 // 用例3：高风险黑名单拦截 (使用已拉黑设备)
 async function case03_highRiskBlock() {
   // 用时间戳生成 11 位唯一手机号，避免跨运行状态污染
-  const ts8 = Date.now().toString().slice(-8);  // 8 digits
-  const phoneA = `139${ts8}`;                     // 3+8 = 11 digits ✓
-  const phoneB = `138${ts8}`;                     // 3+8 = 11 digits ✓
+  const ts8 = Date.now().toString().slice(-8);
+  const phoneA = `139${ts8}`;
+  const phoneB = `138${ts8}`;
+  const phoneC = `137${ts8}`;
   const deviceId = 'device-blacklisted-forever';
-  // 先注册 + 注销 → 设备进入黑名单
-  const r1 = await api.post('/user/register', { phone: phoneA, name: '待拉黑', deviceId });
-  console.log(`    注册: status=${r1.status} code=${r1.data.code}`);
+
+  // 第1次注册+注销（count=1，不拉黑设备）
+  const r1a = await api.post('/user/register', { phone: phoneA, name: '待拉黑1', deviceId });
+  console.log(`    注册1: status=${r1a.status} code=${r1a.data.code}`);
   await sleep(5200);
-  const r2 = await api.post('/user/cancel', { phone: phoneA, deviceId });
-  console.log(`    注销: status=${r2.status} code=${r2.data.code}`);
-  // 🔍 验证 Redis 中确实写入了设备黑名单
+  const r1b = await api.post('/user/cancel', { phone: phoneA, deviceId });
+  console.log(`    注销1: status=${r1b.status} code=${r1b.data.code}`);
+
+  // 第2次注册+注销（count=2 ≥ cancelLimit=2，拉黑设备）
+  await sleep(5200);
+  const r2a = await api.post('/user/register', { phone: phoneB, name: '待拉黑2', deviceId });
+  console.log(`    注册2: status=${r2a.status} code=${r2a.data.code}`);
+  await sleep(5200);
+  const r2b = await api.post('/user/cancel', { phone: phoneB, deviceId });
+  console.log(`    注销2: status=${r2b.status} code=${r2b.data.code}`);
+
+  // 验证 Redis 中确实写入了设备黑名单
   try {
     const redisVal = await redisClient.get(`${REDIS_PREFIX}risk:device_bl:${deviceId}`);
     console.log(`    Redis 检查: pf:risk:device_bl:${deviceId.substring(0,12)}... = ${redisVal}`);
   } catch (e) {
     console.log(`    Redis 检查异常: ${e.message}`);
   }
-  await sleep(5200);
-  // 用同一设备换号注册
-  const resp = await api.post('/user/register', { phone: phoneB, name: '换号', deviceId });
+
+  // 第3次注册 → 应被设备黑名单拦截
+  const resp = await api.post('/user/register', { phone: phoneC, name: '换号', deviceId });
   const pass = record('3. 高风险黑名单拦截', resp.status === 403 && resp.data.code === 40301,
     `status=${resp.status} code=${resp.data.code} (期望 403/40301)`);
   return { pass, detail: `status=${resp.status} code=${resp.data.code}` };

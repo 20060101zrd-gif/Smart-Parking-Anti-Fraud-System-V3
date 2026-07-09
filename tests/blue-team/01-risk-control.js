@@ -295,21 +295,29 @@ async function test_02_phoneBlacklist() {
 
 // ═══════════════════════════════════════════════════════════════
 // 3. 设备指纹同步拉黑 HIGH 拦截 (40301)
+//   device_cancel_limit=2 → 第1次注销不拉黑，第2次注销拉黑设备，第3次注册拦截
 // ═══════════════════════════════════════════════════════════════
 async function test_03_deviceBlacklist() {
   title('3. 设备指纹黑名单 HIGH 拦截 (40301)');
 
-  const phone = P('003');
+  const phone1 = P('003');
+  const phone2 = P('004');
+  const phone3 = P('005');
   const deviceId = 'device-test-blacklist-xyz';
 
-  // 3.1 注册 + 注销 (带 deviceId，触发同步拉黑)
-  await api.post('/user/register', { phone, name: '设备测试', deviceId });
-  await sleep(5100);  // 等待 phone limiter (1次/5秒) 过期
-  await api.post('/user/cancel', { phone, deviceId });
+  // 3.1 第1次注册+注销（count=1，不拉黑设备）
+  await api.post('/user/register', { phone: phone1, name: '设备测试1', deviceId });
+  await sleep(5100);
+  await api.post('/user/cancel', { phone: phone1, deviceId });
 
-  // 3.2 同设备换号注册 (新手机号，但设备被拉黑)
-  const newPhone = P('004');
-  const resp = await api.post('/user/register', { phone: newPhone, name: '换号用户', deviceId });
+  // 3.2 第2次注册+注销（count=2 ≥ cancelLimit，拉黑设备）
+  await sleep(5100);
+  await api.post('/user/register', { phone: phone2, name: '设备测试2', deviceId });
+  await sleep(5100);
+  await api.post('/user/cancel', { phone: phone2, deviceId });
+
+  // 3.3 第3次注册 → 应被设备黑名单拦截
+  const resp = await api.post('/user/register', { phone: phone3, name: '换号用户', deviceId });
 
   assert('HTTP 403 (设备黑名单)', resp.status === 403,
     `实际 status=${resp.status} code=${resp.data.code} msg=${resp.data.message || resp.data.msg || ''}`);
