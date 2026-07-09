@@ -448,6 +448,7 @@ async function loadConfig(){
     <td class="text-sm text-gray-500">${CONFIG_LABELS[k]||k}</td>
     <td><button class="btn btn-primary btn-sm" onclick="updateConfig('${k}')">保存</button></td></tr>`).join('');
   }catch(e){toast('刷新失败: 网络错误',false)}
+}
 
 async function updateConfig(key){
   const v=document.getElementById('cfg-'+key).value;
@@ -479,6 +480,7 @@ async function loadLogs(){
     }).join('');
     document.getElementById('logs-info').textContent=`第${r.data.page}页 / 共${r.data.total}条`;
   }catch(e){toast('刷新失败: 网络错误',false)}
+}
 function logsPage(d){logCurPage=Math.max(1,logCurPage+d);loadLogs();}
 async function clearAllLogs(){
   if(!confirm('确定清空所有拦截日志吗？此操作不可撤销。'))return;
