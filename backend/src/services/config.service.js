@@ -37,9 +37,11 @@ class ConfigService {
       config[r.config_key] = isNaN(Number(r.config_value)) ? r.config_value : Number(r.config_value);
     }
 
-    // 3. 写入 Redis 缓存（5 分钟）
+    // 3. 写入 Redis 缓存（10 秒，避免配置变更后长时间不生效）
     if (redisClient.isReady) {
-      try { await redisClient.set('config:all', JSON.stringify(config), 300); } catch {}
+      try { await redisClient.set('config:all', JSON.stringify(config), 10); } catch (e) {
+        console.error('[ConfigService] Redis 缓存写入失败:', e.message);
+      }
     }
 
     return config;
@@ -69,7 +71,12 @@ class ConfigService {
 
     // 清除 Redis 缓存（下一次读取时回源 MySQL）
     if (redisClient.isReady) {
-      try { await redisClient.del('config:all'); } catch {}
+      try {
+        await redisClient.del('config:all');
+        console.log(`[ConfigService] 规则 [${key}] 已更新为 ${numVal}，Redis 缓存已清除`);
+      } catch (e) {
+        console.error('[ConfigService] Redis 缓存清除失败:', e.message);
+      }
     }
 
     return { key, value: numVal };
