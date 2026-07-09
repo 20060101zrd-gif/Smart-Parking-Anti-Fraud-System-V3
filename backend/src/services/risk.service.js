@@ -243,8 +243,10 @@ class RiskService {
             }
           }
           if (currentCancelCount > cancelLimit) {
-            logger.warn({ deviceId: deviceId.substring(0, 16), cancelCount: currentCancelCount, limit: cancelLimit, ip: ipAddress }, '中风险拦截 → 设备注销次数超限');
-            interceptLog.logIntercept(ipAddress, deviceId, `设备注销次数超限 (${currentCancelCount}/${cancelLimit})`, 'MEDIUM');
+            logger.warn({ deviceId: deviceId.substring(0, 16), cancelCount: currentCancelCount, limit: cancelLimit, ip: ipAddress }, '高风险拦截 → 设备注销次数超限，同步拉黑设备');
+            interceptLog.logIntercept(ipAddress, deviceId, `设备注销次数超限 (${currentCancelCount}/${cancelLimit})`, 'HIGH');
+            // 🆕 超限时先拉黑设备，再拒绝本次注销
+            await this._blacklistDevice(deviceId, deviceId, '注销次数超限自动拉黑');
             throw this._buildBizError(403, 40301, '注销失败：当前设备注销次数已达上限（可在管理后台调整），无法继续注销');
           }
         } catch (err) {
@@ -275,20 +277,7 @@ class RiskService {
 
     // 🆕 4.1 仅在注销次数达到上限时才拉黑设备指纹（未达上限时允许反复注销不拉黑）
     if (deviceId && currentCancelCount >= cancelLimit) {
-      const devOk = await redisClient.set(`risk:device_bl:${deviceId}`, '1', this.BLACKLIST_TTL_SECONDS);
-      if (!devOk) {
-        this._memDeviceBl.add(deviceId);
-      }
-      // 🆕 同步写入 MySQL，让管理面板可见
-      try {
-        await db.run(
-          `INSERT INTO sys_blacklist (device_fingerprint, phone_hash, reason, created_at) VALUES (?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE phone_hash = VALUES(phone_hash), reason = VALUES(reason), created_at = VALUES(created_at)`,
-          [deviceId, phoneHash, '用户注销账号自动拉黑']
-        );
-      } catch (e) {
-        console.error('[RiskService] 写入 sys_blacklist 失败（非阻塞）:', e.message);
-      }
+      await this._blacklistDevice(deviceId, phoneHash, '用户注销账号自动拉黑');
       console.log(`[RiskService] 设备指纹已拉黑 deviceId=${deviceId.substring(0, 16)}... (${currentCancelCount}/${cancelLimit})`);
     }
     
@@ -418,6 +407,23 @@ class RiskService {
       throw this._buildBizError(500, 50000, '解封操作失败，归档数据库异常');
     }
     return true;
+  }
+
+  /** 🆕 设备黑名单写入（Redis + MySQL 双写），供正常注销和超限拦截共用 */
+  async _blacklistDevice(deviceId, phoneHash, reason) {
+    const devOk = await redisClient.set(`risk:device_bl:${deviceId}`, '1', this.BLACKLIST_TTL_SECONDS);
+    if (!devOk) {
+      this._memDeviceBl.add(deviceId);
+    }
+    try {
+      await db.run(
+        `INSERT INTO sys_blacklist (device_fingerprint, phone_hash, reason, created_at) VALUES (?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE phone_hash = VALUES(phone_hash), reason = VALUES(reason), created_at = VALUES(created_at)`,
+        [deviceId, phoneHash, reason]
+      );
+    } catch (e) {
+      console.error('[RiskService] 写入 sys_blacklist 失败（非阻塞）:', e.message);
+    }
   }
 
   _buildBizError(statusCode, code, message) {

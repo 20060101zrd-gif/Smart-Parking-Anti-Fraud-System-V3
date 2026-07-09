@@ -77,6 +77,21 @@ class ConfigService {
       } catch (e) {
         console.error('[ConfigService] Redis 缓存清除失败:', e.message);
       }
+
+      // 🆕 修改 device_cancel_limit 时自动清零所有设备注销计数器
+      if (key === 'device_cancel_limit') {
+        try {
+          const prefix = 'pf:risk:cancel_count:device:';
+          const scanResult = await redisClient.client.scan(0, { MATCH: `${prefix}*`, COUNT: 100 });
+          const keys = scanResult.keys;
+          if (keys.length > 0) {
+            await redisClient.client.del(keys);
+            console.log(`[ConfigService] 已清零 ${keys.length} 个设备注销计数器`);
+          }
+        } catch (e) {
+          console.error('[ConfigService] 清零设备注销计数器失败:', e.message);
+        }
+      }
     }
 
     return { key, value: numVal };
