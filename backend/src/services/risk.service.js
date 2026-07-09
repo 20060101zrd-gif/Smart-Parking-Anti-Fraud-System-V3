@@ -220,13 +220,15 @@ class RiskService {
         }
       }
 
+
       // 🆕 2. 设备注销次数上限检查（从风控规则配置面板动态读取）
+      let cancelLimit = 1;
+      let currentCancelCount = 0;
       if (deviceId) {
         try {
           const cfg = await configService.getAll();
-          const cancelLimit = cfg.device_cancel_limit || 1;
+          cancelLimit = cfg.device_cancel_limit || 1;
           const cancelCountKey = `risk:cancel_count:device:${deviceId}`;
-          let currentCancelCount;
           if (!redisClient.isReady) {
             const entry = this._memCancelCount.get(`device:${deviceId}`) || { count: 0 };
             entry.count++;
@@ -269,8 +271,8 @@ class RiskService {
       console.log(`[RiskService] ⚠️ Redis 不可用，内存标记 phone_hash=${phoneHash.substring(0, 12)}...`);
     }
 
-    // 🆕 4.1 同步拉黑设备指纹，90天内该设备无法重新注册
-    if (deviceId) {
+    // 🆕 4.1 仅在注销次数达到上限时才拉黑设备指纹（未达上限时允许反复注销不拉黑）
+    if (deviceId && currentCancelCount >= cancelLimit) {
       const devOk = await redisClient.set(`risk:device_bl:${deviceId}`, '1', this.BLACKLIST_TTL_SECONDS);
       if (!devOk) {
         this._memDeviceBl.add(deviceId);
@@ -285,7 +287,7 @@ class RiskService {
       } catch (e) {
         console.error('[RiskService] 写入 sys_blacklist 失败（非阻塞）:', e.message);
       }
-      console.log(`[RiskService] 设备指纹已同步拉黑 deviceId=${deviceId.substring(0, 16)}...`);
+      console.log(`[RiskService] 设备指纹已拉黑 deviceId=${deviceId.substring(0, 16)}... (${currentCancelCount}/${cancelLimit})`);
     }
     
     // 5. 双写策略：写入 MySQL 归档层（phone_hash 精确匹配）
