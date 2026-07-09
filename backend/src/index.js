@@ -21,6 +21,9 @@ app.use(cookieParser());
 // 🆕 Gzip 压缩：减少 70% 带宽（对 2Mbps ECS 尤其关键）
 const compression = require('compression');
 app.use(compression());
+// 🆕 CORS：允许 CDN 域名跨域访问 API
+const cors = require('cors');
+app.use(cors({ origin: true, credentials: true }));
 
 // --- 系统启动编排 ---
 async function bootstrap() {
