@@ -125,7 +125,7 @@ const rateLimiter = (type) => {
       try { cfg = await configService.getAll(); } catch {}
       const ip = extractIp(req);
       key = `limit:reg_ip:${ip}`;
-      limit = (cfg && cfg.ip_register_limit) || 5;
+      limit = (cfg && cfg.ip_register_limit) || 2;
       windowSeconds = 60;
       statusCode = 401;
       errorCode = 40101;

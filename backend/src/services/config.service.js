@@ -9,7 +9,7 @@ class ConfigService {
   static DEFAULTS = {
     device_register_limit:    3,     // 单设备注册上限
     device_cancel_limit:      2,     // 单设备注销次数上限（达标后拉黑设备，不拦截注销）
-    ip_register_limit:        5,     // 单IP每分钟注册上限
+    ip_register_limit:        2,     // 单IP每分钟注册上限（超过即弹出滑块验证）
     captcha_fail_max:         3,     // 验证码连续失败触发IP封禁次数
     ip_blocklist_ttl_hours:   0.0167, // IP临时黑名单有效期(小时) — 默认≈1分钟便于测试，生产环境设为24
     device_blacklist_ttl_days: 90,   // 设备黑名单有效期(天)

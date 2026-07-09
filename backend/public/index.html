@@ -32,6 +32,9 @@
     .bl-table td{padding:14px 16px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
     .bl-table tr:last-child td{border-bottom:none}
     .bl-table tr:hover td{background:#f8fafc}
+    /* 🆕 刷新按钮旋转动画 */
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .animate-spin{animation:spin .6s linear infinite}
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex">
@@ -85,7 +88,7 @@
   <main class="flex-1 p-6 overflow-auto">
     <!-- Overview Page -->
     <div id="page-overview" class="page-view active">
-      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">系统概览 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadOverview()" title="刷新数据"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">系统概览 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadOverview)" title="刷新数据"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="overview-cards">
         <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <p class="text-sm text-gray-500 mb-1">今日拦截量</p>
@@ -125,7 +128,7 @@
 
     <!-- Config Page -->
     <div id="page-config" class="page-view">
-      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">风控规则配置 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadConfig()" title="刷新规则"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">风控规则配置 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadConfig)" title="刷新规则"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <p class="text-sm text-gray-500 mb-4">修改后实时生效，操作记录留存</p>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" id="config-table-container">
         <table><thead><tr><th>参数标识</th><th>当前值</th><th>说明</th><th>操作</th></tr></thead><tbody id="config-tbody"></tbody></table>
@@ -134,7 +137,7 @@
 
     <!-- Logs Page -->
     <div id="page-logs" class="page-view">
-      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">拦截日志 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadLogs()" title="刷新日志"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">拦截日志 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadLogs)" title="刷新日志"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3 items-center">
         <input type="text" id="log-ip" placeholder="IP筛选" class="w-32">
         <input type="date" id="log-start" class="w-36" lang="en"><span class="self-center text-gray-400">至</span>
@@ -161,7 +164,7 @@
     <div id="page-blacklist" class="page-view">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">黑名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="loadBlacklist()" title="刷新黑名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
+          <h1 class="text-2xl font-bold text-gray-900">黑名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="withSpin(this,loadBlacklist)" title="刷新黑名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
           <p class="text-sm text-gray-500 mt-1">共 <span id="bl-total-display" class="font-semibold text-gray-700">0</span> 条记录</p>
         </div>
         <button class="btn btn-sm inline-flex items-center justify-center gap-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50" onclick="showAddBlacklistModal()">
@@ -202,7 +205,7 @@
 
     <!-- Whitelist Page -->
     <div id="page-whitelist" class="page-view">
-      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">白名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="loadWhitelist()" title="刷新白名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">白名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadWhitelist)" title="刷新白名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <!-- 🆕 通过手机号一键加入设备白名单 -->
       <div class="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-100 mb-4">
         <div class="flex flex-wrap items-center gap-3">
@@ -235,7 +238,7 @@
     <div id="page-users" class="page-view">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">用户管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="loadUsers(usersCurPage)" title="刷新用户"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
+          <h1 class="text-2xl font-bold text-gray-900">用户管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="withSpin(this,()=>loadUsers(usersCurPage))" title="刷新用户"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
           <p class="text-sm text-gray-500 mt-1">共 <span id="users-total" class="font-semibold text-gray-700">0</span> 条注册记录</p>
         </div>
       </div>
@@ -326,6 +329,16 @@ function toast(msg,ok=true){
   setTimeout(()=>{d.remove();if(!el.children.length)el.style.opacity='0'},3000);
 }
 
+// 🆕 刷新按钮包装器：旋转图标 + 加载反馈
+function withSpin(el,fn){
+  const svg=el.querySelector('svg');svg.classList.add('animate-spin');
+  try{
+    const p=fn();
+    if(p&&p.then)p.then(()=>{svg.classList.remove('animate-spin')}).catch(()=>{svg.classList.remove('animate-spin');toast('刷新失败，请检查网络',false)});
+    else svg.classList.remove('animate-spin');
+  }catch(e){svg.classList.remove('animate-spin');toast('刷新失败: '+(e.message||'未知错误'),false)}
+}
+
 function switchPage(p){
   document.querySelectorAll('.page-view').forEach(v=>v.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
@@ -363,8 +376,9 @@ function yLabel(max){
 }
 
 async function loadOverview(){
-  const r=await api(`/overview?range=${ovRange}`);if(r.code!==20000)return;
-  const d=r.data;
+  try{
+    const r=await api(`/overview?range=${ovRange}`);if(r.code!==20000){toast((r&&r.message)||'加载概览失败',false);return;}
+    const d=r.data;
   document.getElementById('ov-today').textContent=d.todayIntercept||0;
   document.getElementById('ov-users').textContent=d.totalUsers||0;
   document.getElementById('ov-bl').textContent=d.blacklistCount||0;
@@ -418,20 +432,22 @@ async function loadOverview(){
       loadOverview();
     };
   });
+  }catch(e){toast('刷新失败: 网络错误',false)}
 }
 
 // ── Config ──
 const CONFIG_LABELS={device_register_limit:'单设备注册上限',device_cancel_limit:'单设备注销上限',ip_register_limit:'IP每分钟注册上限',captcha_fail_max:'验证码失败触发封禁次数',ip_blocklist_ttl_hours:'IP黑名单有效期(小时)',device_blacklist_ttl_days:'设备黑名单有效期(天)',hash_archive_ttl_days:'注销沉淀库有效期(天)',captcha_answer_ttl_sec:'验证码有效期(秒)',captcha_token_ttl_sec:'验证Token有效期(秒)'};
 
 async function loadConfig(){
-  const r=await api('/config');if(r.code!==20000)return;
-  const tbody=document.getElementById('config-tbody');
-  tbody.innerHTML=Object.entries(r.data).map(([k,v])=>`<tr>
+  try{
+    const r=await api('/config');if(r.code!==20000){toast((r&&r.message)||'加载配置失败',false);return;}
+    const tbody=document.getElementById('config-tbody');
+    tbody.innerHTML=Object.entries(r.data).map(([k,v])=>`<tr>
     <td class="font-mono text-sm">${k}</td>
     <td><input type="number" id="cfg-${k}" value="${v}" class="w-24 text-sm" min="0"></td>
     <td class="text-sm text-gray-500">${CONFIG_LABELS[k]||k}</td>
     <td><button class="btn btn-primary btn-sm" onclick="updateConfig('${k}')">保存</button></td></tr>`).join('');
-}
+  }catch(e){toast('刷新失败: 网络错误',false)}
 
 async function updateConfig(key){
   const v=document.getElementById('cfg-'+key).value;
@@ -449,19 +465,20 @@ function riskBadge(level){
   return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold ${map[level]||'bg-gray-100 text-gray-600'}">${level||'--'}</span>`;
 }
 async function loadLogs(){
-  const ip=document.getElementById('log-ip').value,start=document.getElementById('log-start').value,end=document.getElementById('log-end').value;
-  let url=`/intercept-logs?page=${logCurPage}&pageSize=15`;if(ip)url+=`&ip=${ip}`;if(start)url+=`&startDate=${start}`;if(end)url+=`&endDate=${end}`;
-  const r=await api(url);if(r.code!==20000)return;
-  document.getElementById('logs-tbody').innerHTML=(r.data.list||[]).map(l=>{
-    const dhRaw = l.device_hash || '';
-    const dhDisplay = dhRaw
-      ? `<span class="font-mono text-xs" title="${dhRaw}">${dhRaw.slice(0,16)}${dhRaw.length>16?'...':''}</span>`
-      : '<span class="text-xs text-gray-300">--</span>';
-    return `<tr>
-    <td>${l.id}</td><td class="font-mono text-xs">${l.ip_address}</td><td>${dhDisplay}</td><td>${l.intercept_reason}</td><td>${riskBadge(l.risk_level)}</td><td class="text-xs">${fmtLogTime(l.created_at)}</td></tr>`;
-  }).join('');
-  document.getElementById('logs-info').textContent=`第${r.data.page}页 / 共${r.data.total}条`;
-}
+  try{
+    const ip=document.getElementById('log-ip').value,start=document.getElementById('log-start').value,end=document.getElementById('log-end').value;
+    let url=`/intercept-logs?page=${logCurPage}&pageSize=15`;if(ip)url+=`&ip=${ip}`;if(start)url+=`&startDate=${start}`;if(end)url+=`&endDate=${end}`;
+    const r=await api(url);if(r.code!==20000){toast((r&&r.message)||'加载日志失败',false);return;}
+    document.getElementById('logs-tbody').innerHTML=(r.data.list||[]).map(l=>{
+      const dhRaw = l.device_hash || '';
+      const dhDisplay = dhRaw
+        ? `<span class="font-mono text-xs" title="${dhRaw}">${dhRaw.slice(0,16)}${dhRaw.length>16?'...':''}</span>`
+        : '<span class="text-xs text-gray-300">--</span>';
+      return `<tr>
+      <td>${l.id}</td><td class="font-mono text-xs">${l.ip_address}</td><td>${dhDisplay}</td><td>${l.intercept_reason}</td><td>${riskBadge(l.risk_level)}</td><td class="text-xs">${fmtLogTime(l.created_at)}</td></tr>`;
+    }).join('');
+    document.getElementById('logs-info').textContent=`第${r.data.page}页 / 共${r.data.total}条`;
+  }catch(e){toast('刷新失败: 网络错误',false)}
 function logsPage(d){logCurPage=Math.max(1,logCurPage+d);loadLogs();}
 async function clearAllLogs(){
   if(!confirm('确定清空所有拦截日志吗？此操作不可撤销。'))return;

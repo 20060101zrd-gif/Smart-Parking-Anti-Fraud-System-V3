@@ -125,9 +125,9 @@ CREATE TABLE IF NOT EXISTS sys_whitelist (
 INSERT IGNORE INTO sys_config (config_key, config_value) VALUES
 ('device_register_limit', '3'),
 ('device_cancel_limit', '2'),
-('ip_register_limit', '5'),
+('ip_register_limit', '2'),
 ('captcha_fail_max', '3'),
-('ip_blocklist_ttl_hours', '24'),
+('ip_blocklist_ttl_hours', '0.0167'),
 ('device_blacklist_ttl_days', '90'),
 ('hash_archive_ttl_days', '90'),
 ('captcha_answer_ttl_sec', '60'),
