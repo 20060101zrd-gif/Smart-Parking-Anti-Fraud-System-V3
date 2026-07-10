@@ -46,10 +46,11 @@ class CaptchaService {
    * answerX/answerY 仅用于渲染缺口位，不会返回给前端
    */
   _generateBackgroundSvg(captchaId, answerX, answerY) {
-    const pattern = this._generatePattern(captchaId, 0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    // +1 触发最后一个 1px cell，确保最右侧不会漏白边
+    const pattern = this._generatePattern(captchaId, 0, 0, this.CANVAS_WIDTH + 1, this.CANVAS_HEIGHT + 1);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" viewBox="0 0 ${this.CANVAS_WIDTH} ${this.CANVAS_HEIGHT}">
   <!-- 底色：深灰，让白色缺口和彩色图案都清晰可见 -->
-  <rect width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="#94a3b8"/>
+  <rect x="0" y="0" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="#94a3b8"/>
   ${pattern}
   <text x="${Math.floor(this.CANVAS_WIDTH / 2)}" y="18" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="sans-serif">滑动拼图验证</text>
   <!-- 缺口：纯白镂空 + 虚线边框 -->
