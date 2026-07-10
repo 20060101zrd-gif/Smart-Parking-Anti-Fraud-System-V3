@@ -380,8 +380,9 @@ function renderCaptcha(data) {
   capMaxX = (data.canvas.width - data.puzzle.width) * capScale;
 
   // 🆕 缺口 Y 坐标（服务端返回；兼容旧数据则默认居中）
-  const rawY = (data.puzzleY != null) ? data.puzzleY : (data.canvas.height - data.puzzle.height) / 2;
-  capPieceY = rawY * capScale;
+  let rawY = (data.puzzleY != null) ? Number(data.puzzleY) : (data.canvas.height - data.puzzle.height) / 2;
+  if (isNaN(rawY) || rawY < 0 || rawY > data.canvas.height) rawY = (data.canvas.height - data.puzzle.height) / 2;
+  capPieceY = Math.round(rawY * capScale);
 
   // 背景 SVG（含缺口）
   capCanvas.innerHTML = data.backgroundSvg;
@@ -395,6 +396,7 @@ function renderCaptcha(data) {
   capPiece.innerHTML = data.puzzleSvg;
   capPiece.style.width = (data.puzzle.width * capScale) + 'px';
   capPiece.style.height = (data.puzzle.height * capScale) + 'px';
+  capPiece.style.top = capPieceY + 'px'; // 用 top 定位，比 transform 更稳
   capPieceX = 0;
   setCapPosition(0);
 
@@ -409,8 +411,8 @@ function renderCaptcha(data) {
 
 function setCapPosition(x) {
   capPieceX = Math.max(0, Math.min(x, capMaxX));
-  // 🆕 用 transform 定位，避免 top/left 被 CSS 覆盖或出现 NaN
-  capPiece.style.transform = `translate3d(${capPieceX.toFixed(1)}px, ${capPieceY.toFixed(1)}px, 0)`;
+  // 用 left/top 定位，兼容性和可调试性更好
+  capPiece.style.left = capPieceX.toFixed(1) + 'px';
 
   // 同步 thumb 位置
   const trackW = capThumb.parentElement.offsetWidth - capThumb.offsetWidth;
@@ -453,7 +455,7 @@ function capMove(e) {
     capBar.style.width = trackW > 0 ? ((thumbLeft / trackW) * 100).toFixed(0) + '%' : '0%';
     const pieceLeft = trackW > 0 ? (thumbLeft / trackW) * capMaxX : 0;
     capPieceX = pieceLeft;
-    capPiece.style.transform = `translate3d(${capPieceX.toFixed(1)}px, ${capPieceY.toFixed(1)}px, 0)`;
+    capPiece.style.left = capPieceX.toFixed(1) + 'px';
   }
   e.preventDefault();
 }

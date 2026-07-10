@@ -121,7 +121,7 @@ class ConfigService {
         `UPDATE sys_config SET config_value = ? WHERE config_key = ? AND config_value = ?`,
         [m.newVal, m.key, m.oldVal]
       );
-      if (result && m.key === 'ip_blocklist_ttl_hours' && result > 0) {
+      if (result && result.changes > 0) {
         // 🆕 旧 24h 封禁迁移为 1min 时，清理 Redis 中所有旧的长效 IP 封禁 key
         console.log('[ConfigService] 🧹 已迁移 ip_blocklist_ttl_hours 至约 1min，正在清理旧封禁...');
         try {

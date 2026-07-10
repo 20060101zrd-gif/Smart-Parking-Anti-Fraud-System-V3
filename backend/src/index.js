@@ -41,10 +41,14 @@ async function bootstrap() {
     // 3. 连接 Redis 高速缓存 (自带降级，不阻塞主线程)
     await redisClient.connect();
     // 🆕 清理旧封禁 key（config 迁移可能把 24h → 1min，但旧 key 仍残留在 Redis）
+    // 这里用原始 client 直接扫，避免 isReady 状态未就绪导致空扫
     try {
-      const keys = await redisClient.scanKeys('risk:ip_bl:*');
-      for (const fullKey of keys) {
-        await redisClient.del(fullKey.replace(/^pf:/, ''));
+      await new Promise(r => setTimeout(r, 200)); // 等 ready 事件触发
+      const keys = [];
+      const iter = redisClient.client.scanIterator({ MATCH: 'pf:risk:ip_bl:*', COUNT: 200 });
+      for await (const key of iter) { keys.push(key); }
+      for (const key of keys) {
+        await redisClient.client.del(key);
       }
       if (keys.length > 0) console.log(`🧹 [Bootstrap] 已清理 ${keys.length} 个旧 IP 封禁 key`);
     } catch (e) { /* 非关键 */ }
