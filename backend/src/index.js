@@ -57,6 +57,11 @@ async function bootstrap() {
       const cfg = require('./services/config.service');
       const all = await cfg.getAll();
       console.log(`📋 [Bootstrap] ip_blocklist_ttl_hours=${all.ip_blocklist_ttl_hours} captcha_fail_max=${all.captcha_fail_max} ip_register_limit=${all.ip_register_limit}`);
+      // 强制修正：如果 ip_blocklist_ttl_hours 还是 >1h 旧值，直接覆写
+      if (parseFloat(all.ip_blocklist_ttl_hours) >= 1) {
+        await cfg.update('ip_blocklist_ttl_hours', 0.0167, 'bootstrap');
+        console.log('📋 [Bootstrap] 🔧 已强制修正 ip_blocklist_ttl_hours → 0.0167 (~1分钟)');
+      }
     } catch (e) {}
     auditQueue.start();//确保高危操作日志能每2秒批量落盘
     interceptLogQueue.start();//🆕 风控拦截日志每2秒异步刷盘
