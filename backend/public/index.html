@@ -206,22 +206,6 @@
     <!-- Whitelist Page -->
     <div id="page-whitelist" class="page-view">
       <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">白名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadWhitelist)" title="刷新白名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
-      <!-- 🆕 通过手机号一键加入设备白名单 -->
-      <div class="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-100 mb-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-          <span class="text-sm text-blue-700 font-medium flex-shrink-0">通过手机号查设备：</span>
-          <input type="text" id="wl-phone" placeholder="输入 11 位手机号" class="w-48 border-blue-200 focus:border-blue-400">
-          <button class="btn btn-sm text-white" style="background:#2563eb" onclick="addWhitelistByPhone()">
-            <span class="inline-flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              查找并加入设备白名单
-            </span>
-          </button>
-          <span id="wl-phone-result" class="text-xs text-blue-600"></span>
-        </div>
-        <p class="text-xs text-blue-400 mt-2">系统会自动从活跃用户或注销沉淀库中查找该手机号关联的设备哈希</p>
-      </div>
       <!-- 手动添加 -->
       <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3">
         <select id="wl-type" class="w-28"><option value="ip">IP</option><option value="device">设备</option><option value="phone">手机号</option></select>
@@ -698,22 +682,6 @@ async function loadWhitelist(){
     <td class="text-xs font-semibold">${w.type}</td><td class="font-mono text-xs">${w.value}</td><td>${w.remark}</td>
     <td><button class="btn btn-danger btn-sm" onclick="removeWhitelist('${w.type==='IP'?'ip':w.type==='设备'?'device':'phone'}','${w.value}')">移除</button></td></tr>`).join('');
   }catch(e){toast('加载白名单失败',false)}
-}
-async function addWhitelistByPhone(){
-  const phone=document.getElementById('wl-phone').value.trim();
-  const resultEl=document.getElementById('wl-phone-result');
-  if(!/^1[3-9]\d{9}$/.test(phone)){resultEl.textContent='请输入正确的11位手机号';return toast('请输入正确的11位手机号',false);}
-  resultEl.textContent='查询中...';
-  const r=await api('/whitelist/add-by-phone',{method:'POST',body:JSON.stringify({phone,remark:'管理员通过手机号添加'})});
-  if(r.code===20000){
-    resultEl.innerHTML=`✅ ${r.message} | 设备哈希: <span class="font-mono">${r.data.display}</span>`;
-    toast(r.message);
-    document.getElementById('wl-phone').value='';
-    loadWhitelist();
-  }else{
-    resultEl.textContent='❌ '+(r.message||'操作失败');
-    toast(r.message||'操作失败',false);
-  }
 }
 async function addWhitelist(){
   const type=document.getElementById('wl-type').value,value=document.getElementById('wl-value').value,remark=document.getElementById('wl-remark').value;
