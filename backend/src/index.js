@@ -78,7 +78,20 @@ async function bootstrap() {
     });
 
     // 4. 挂载前端静态资源 (Web 管理面板)
-    app.use(express.static(path.join(__dirname, '../public')));
+    // 🆕 资源缓存策略：HTML 不缓存，CSS/JS/图片永久缓存（文件名变化自动失效）
+    app.use(express.static(path.join(__dirname, '../public'), {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+      etag: true,
+      lastModified: false
+    }));
 
     // 5. 挂载 API 路由 (暂留空，后续叠加)
     app.use('/api/v1', require('./routes'));
