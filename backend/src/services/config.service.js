@@ -117,10 +117,24 @@ class ConfigService {
       { key: 'ip_blocklist_ttl_hours', oldVal: '24', newVal: String(ConfigService.DEFAULTS.ip_blocklist_ttl_hours) },
     ];
     for (const m of migrations) {
-      await db.run(
+      const result = await db.run(
         `UPDATE sys_config SET config_value = ? WHERE config_key = ? AND config_value = ?`,
         [m.newVal, m.key, m.oldVal]
       );
+      if (result && m.key === 'ip_blocklist_ttl_hours' && result > 0) {
+        // 🆕 旧 24h 封禁迁移为 1min 时，清理 Redis 中所有旧的长效 IP 封禁 key
+        console.log('[ConfigService] 🧹 已迁移 ip_blocklist_ttl_hours 至约 1min，正在清理旧封禁...');
+        try {
+          if (redisClient.isReady) {
+            const keys = await redisClient.scanKeys('risk:ip_bl:*');
+            for (const fullKey of keys) {
+              const shortKey = fullKey.replace(/^pf:/, '');
+              await redisClient.del(shortKey);
+            }
+            if (keys.length > 0) console.log(`[ConfigService] 🧹 已清理 ${keys.length} 个旧 IP 封禁 key`);
+          }
+        } catch (e) { console.error('[ConfigService] 清理旧封禁失败:', e.message); }
+      }
     }
   }
 }

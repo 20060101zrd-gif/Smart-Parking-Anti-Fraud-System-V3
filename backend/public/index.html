@@ -164,7 +164,7 @@
     <div id="page-blacklist" class="page-view">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">黑名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="withSpin(this,loadBlacklist)" title="刷新黑名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
+          <h1 class="text-2xl font-bold text-gray-900">黑名单管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center gap-1" onclick="withSpin(this,loadBlacklist)" title="刷新黑名单"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
           <p class="text-sm text-gray-500 mt-1">共 <span id="bl-total-display" class="font-semibold text-gray-700">0</span> 条记录</p>
         </div>
         <button class="btn btn-sm inline-flex items-center justify-center gap-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50" onclick="showAddBlacklistModal()">
@@ -238,7 +238,7 @@
     <div id="page-users" class="page-view">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">用户管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center" onclick="withSpin(this,()=>loadUsers(usersCurPage))" title="刷新用户"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button></h1>
+          <h1 class="text-2xl font-bold text-gray-900">用户管理 <button class="btn btn-sm text-gray-400 hover:text-blue-600 ml-2 inline-flex items-center gap-1" onclick="withSpin(this,()=>loadUsers(usersCurPage))" title="刷新用户"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
           <p class="text-sm text-gray-500 mt-1">共 <span id="users-total" class="font-semibold text-gray-700">0</span> 条注册记录</p>
         </div>
       </div>
