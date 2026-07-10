@@ -345,11 +345,13 @@ class RiskService {
       }
       console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${count}/${captchaFailMax})`);
       if (count >= captchaFailMax) {
-        await redisClient.set(`risk:ip_bl:${ip}`, `captcha_fail_x${count}`, ipBlTtl);
+        // 🆕 保证 TTL 最小 60s（防止配置错误导致 0 秒封禁）
+        var finalTtl = (ipBlTtl && ipBlTtl > 0) ? ipBlTtl : 60;
+        var setOk = await redisClient.set(`risk:ip_bl:${ip}`, `captcha_fail_x${count}`, Math.round(finalTtl));
         // 🆕 清除验证失败计数和注册频控计数，解封后给用户一个干净的起点
         await redisClient.del(`risk:captcha_fail:${ip}`);
         await redisClient.del(`limit:reg_ip:${ip}`);
-        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已自动加入临时黑名单（计数器已清零）`);
+        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已加入临时黑名单 TTL=${finalTtl}s setOk=${setOk}`);
         interceptLog.logIntercept(ip, '', `连续${count}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
       }
       return count;
