@@ -4,6 +4,7 @@ const { fail } = require('../utils/response');
 const interceptLog = require('../services/intercept-log.service');
 const whitelistService = require('../services/whitelist.service');
 const configService = require('../services/config.service');
+const encryption = require('../utils/encryption');
 const logger = require('../utils/logger');
 
 /**
@@ -68,7 +69,12 @@ const rateLimiter = (type) => {
       try {
         const ip = extractIp(req);
         const deviceId = req.body?.deviceId || '';
-        const isWhitelisted = await whitelistService.isWhitelisted(ip, deviceId);
+        const phone   = req.body?.phone || '';
+        let phoneHash = '';
+        if (phone && /^1[3-9]\d{9}$/.test(phone)) {
+          phoneHash = encryption.hashPhone(phone);
+        }
+        const isWhitelisted = await whitelistService.isWhitelisted(ip, deviceId, phoneHash);
         req._isWhitelisted = isWhitelisted;
         req._whitelistChecked = true;
         if (isWhitelisted) {

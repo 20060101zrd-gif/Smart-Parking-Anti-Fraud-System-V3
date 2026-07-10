@@ -130,9 +130,43 @@ class WhitelistService {
     return false;
   }
 
-  async isWhitelisted(ip, deviceHash) {
+  // ═══════════════════════════════════════════════
+  //  手机号哈希白名单
+  // ═══════════════════════════════════════════════
+
+  async addPhoneHash(phoneHash, createdBy = null) {
+    if (!phoneHash) return false;
+    if (!redisClient.isReady) { this._memDevices.add('PHONE:' + phoneHash); return true; }
+    const ok = await redisClient.set(`whitelist:phone:${phoneHash}`, '1', null);
+    if (!ok) throw new Error('写入 Redis 失败');
+    try { await db.run(
+      `INSERT INTO sys_whitelist (type, value, remark, created_by) VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE remark = VALUES(remark)`,
+      ['phone', phoneHash, '通过手机号添加', createdBy || null]
+    ); } catch {}
+    return true;
+  }
+
+  async removePhoneHash(phoneHash) {
+    if (!phoneHash) return false;
+    if (!redisClient.isReady) { this._memDevices.delete('PHONE:' + phoneHash); return true; }
+    await redisClient.del(`whitelist:phone:${phoneHash}`);
+    try { await db.run(`DELETE FROM sys_whitelist WHERE type = 'phone' AND value = ?`, [phoneHash]); } catch {}
+    return true;
+  }
+
+  async isPhoneWhitelisted(phoneHash) {
+    if (!phoneHash) return false;
+    const redisVal = await redisClient.get(`whitelist:phone:${phoneHash}`);
+    if (redisVal) return true;
+    if (!redisClient.isReady) return this._memDevices.has('PHONE:' + phoneHash);
+    return false;
+  }
+
+  async isWhitelisted(ip, deviceHash, phoneHash) {
     if (ip        && await this.isIpWhitelisted(ip))         return true;
     if (deviceHash && await this.isDeviceWhitelisted(deviceHash)) return true;
+    if (phoneHash && await this.isPhoneWhitelisted(phoneHash)) return true;
     return false;
   }
 }

@@ -487,17 +487,17 @@ class AdminController {
       }
 
       if (!deviceHash) {
-        // 🆕 未找到设备 → 使用 phoneHash 作为标识记录白名单（后续注册时设备绑定后生效）
-        const placeholder = 'PHONE:' + phoneHash.substring(0, 32);
-        await whitelistService.addDevice(placeholder, remark || '通过手机号添加', req.admin?.adminId);
+        // 🆕 未找到设备 → 直接存 phone hash，注册时 isWhitelisted 会命中 phone 白名单
+        await whitelistService.addPhoneHash(phoneHash, req.admin?.adminId);
         auditService.logAction(req.admin.adminId, 'ADD_WHITELIST_BY_PHONE',
           `phone→${phone.substring(0,3)}****${phone.substring(7)} (未注册/已清除)`, req.ip);
-        return success(res, { phone: phone.substring(0,3) + '****' + phone.substring(7), deviceHash: placeholder },
-          '手机号白名单已记录，设备将在注册后自动绑定');
+        return success(res, { phone: phone.substring(0,3) + '****' + phone.substring(7) },
+          '手机号白名单已添加，该号码注册时将跳过风控黑名单');
       }
 
-      // 3. 加入白名单
+      // 3. 加入白名单（device + phone 双维度）
       await whitelistService.addDevice(deviceHash, remark, req.admin?.adminId);
+      await whitelistService.addPhoneHash(phoneHash, req.admin?.adminId);
 
       // 4. 审计日志
       auditService.logAction(

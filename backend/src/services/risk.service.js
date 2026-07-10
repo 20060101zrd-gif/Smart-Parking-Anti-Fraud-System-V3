@@ -51,8 +51,10 @@ class RiskService {
   async checkAndRegister(phone, name, deviceId, ip, req = {}) {
     // ═══════════════════════════════════════════════
     // ⬜ 白名单放行：优先读取 rateLimiter 中间件已缓存的结果，避免重复 Redis 查询
+    // 🆕 同时检查 phone hash 白名单（管理员可通过"按手机号添加白名单"放行历史注销库中的号码）
     // ═══════════════════════════════════════════════
-    const isWhitelisted = req._isWhitelisted === true || await whitelistService.isWhitelisted(ip, deviceId);
+    const phoneHash = encryption.hashPhone(phone);
+    const isWhitelisted = req._isWhitelisted === true || await whitelistService.isWhitelisted(ip, deviceId, phoneHash);
     if (isWhitelisted) {
       logger.debug({ ip, deviceId: (deviceId || '').substring(0, 12) }, '白名单放行');
       // 直接走正常注册流程
@@ -116,7 +118,6 @@ class RiskService {
     // ═══════════════════════════════════════════════
     // 🔴 高风险检测-3：手机号命中历史注销沉淀库（基于 SHA256 phone_hash）
     // ═══════════════════════════════════════════════
-    const phoneHash = encryption.hashPhone(phone);
     const probeKey = `risk:hash_bl:${phoneHash}`;
     let isBanned = await redisClient.get(probeKey);
     // 🆕 Redis 降级 → 内存检查
