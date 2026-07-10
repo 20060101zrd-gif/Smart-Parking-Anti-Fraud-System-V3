@@ -224,8 +224,8 @@
       </div>
       <!-- 手动添加 -->
       <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-wrap gap-3">
-        <select id="wl-type" class="w-28"><option value="ip">IP</option><option value="device">设备</option></select>
-        <input type="text" id="wl-value" placeholder="输入 IP 或设备哈希" class="w-64">
+        <select id="wl-type" class="w-28"><option value="ip">IP</option><option value="device">设备</option><option value="phone">手机号</option></select>
+        <input type="text" id="wl-value" placeholder="输入 IP、设备哈希或手机号" class="w-64">
         <input type="text" id="wl-remark" placeholder="备注" class="w-40">
         <button class="btn btn-primary btn-sm" onclick="addWhitelist()">添加</button>
       </div>
@@ -689,12 +689,15 @@ async function unbanAll(){
 
 // ── Whitelist ──
 async function loadWhitelist(){
-  const r=await api('/whitelist');if(r.code!==20000)return;
-  const ips=(r.data.ips||[]).map(v=>({type:'IP',value:v.ip||v,remark:v.remark||''}));
-  const devs=(r.data.devices||[]).map(v=>({type:'设备',value:v.deviceHash||v,remark:v.remark||''}));
-  document.getElementById('wl-tbody').innerHTML=[...ips,...devs].map(w=>`<tr>
+  try{
+    const r=await api('/whitelist');if(r.code!==20000){toast(r.message||'加载白名单失败',false);return;}
+    const ips=(r.data.ips||[]).map(v=>({type:'IP',value:v.ip||v,remark:v.remark||''}));
+    const devs=(r.data.devices||[]).map(v=>({type:'设备',value:v.deviceHash||v,remark:v.remark||''}));
+    const phones=(r.data.phones||[]).map(v=>({type:'手机号',value:v.phoneHash||v,remark:v.remark||''}));
+    document.getElementById('wl-tbody').innerHTML=[...ips,...devs,...phones].map(w=>`<tr>
     <td class="text-xs font-semibold">${w.type}</td><td class="font-mono text-xs">${w.value}</td><td>${w.remark}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="removeWhitelist('${w.type==='IP'?'ip':'device'}','${w.value}')">移除</button></td></tr>`).join('');
+    <td><button class="btn btn-danger btn-sm" onclick="removeWhitelist('${w.type==='IP'?'ip':w.type==='设备'?'device':'phone'}','${w.value}')">移除</button></td></tr>`).join('');
+  }catch(e){toast('加载白名单失败',false)}
 }
 async function addWhitelistByPhone(){
   const phone=document.getElementById('wl-phone').value.trim();

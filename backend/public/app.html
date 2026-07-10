@@ -360,7 +360,6 @@ function loadCaptcha() {
   fetch(API + '/captcha/generate').then(r => r.json()).then(d => {
     if (d.code !== 20000) {
       document.getElementById('cap-status').textContent = '验证码加载失败';
-      // 🆕 40302=IP被封 → 倒计时封禁页
       if (d.code === 40302) {
         document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
         document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
@@ -370,33 +369,36 @@ function loadCaptcha() {
       return;
     }
     capData = d.data;
-    renderCaptcha(d.data);
-  });
+    // 🆕 延迟 50ms 确保 reflow，offsetWidth 才能取到实际宽度
+    setTimeout(function(){ renderCaptcha(d.data); }, 50);
+  }).catch(function(){ document.getElementById('cap-status').textContent = '网络错误'; });
 }
 
 function renderCaptcha(data) {
-  const cw = capCanvas.offsetWidth || data.canvas.width;
+  var cw = capCanvas.offsetWidth;
+  if (!cw || cw < 50) cw = data.canvas.width; // offsetWidth 为 0 时 fallback
   capScale = cw / data.canvas.width;
   capMaxX = (data.canvas.width - data.puzzle.width) * capScale;
 
-  // 🆕 缺口 Y 坐标（服务端返回；兼容旧数据则默认居中）
-  let rawY = (data.puzzleY != null) ? Number(data.puzzleY) : (data.canvas.height - data.puzzle.height) / 2;
+  var rawY = (data.puzzleY != null) ? Number(data.puzzleY) : (data.canvas.height - data.puzzle.height) / 2;
   if (isNaN(rawY) || rawY < 0 || rawY > data.canvas.height) rawY = (data.canvas.height - data.puzzle.height) / 2;
   capPieceY = Math.round(rawY * capScale);
 
-  // 背景 SVG（含缺口）
+  // 背景 SVG：填满整个 canvas 容器，不残留白边
   capCanvas.innerHTML = data.backgroundSvg;
-  const bgSvg = capCanvas.querySelector('svg');
+  var bgSvg = capCanvas.querySelector('svg');
   if (bgSvg) {
-    bgSvg.style.width = cw + 'px';
-    bgSvg.style.height = (data.canvas.height * capScale) + 'px';
+    bgSvg.setAttribute('width', '100%');
+    bgSvg.setAttribute('height', '100%');
+    bgSvg.style.width = '100%';
+    bgSvg.style.height = '100%';
   }
 
-  // 拼图块 SVG（与缺口位图案一致）
+  // 拼图块 SVG（与缺口位图案完全一致）
   capPiece.innerHTML = data.puzzleSvg;
   capPiece.style.width = (data.puzzle.width * capScale) + 'px';
   capPiece.style.height = (data.puzzle.height * capScale) + 'px';
-  capPiece.style.top = capPieceY + 'px'; // 用 top 定位，比 transform 更稳
+  capPiece.style.top = capPieceY + 'px';
   capPieceX = 0;
   setCapPosition(0);
 

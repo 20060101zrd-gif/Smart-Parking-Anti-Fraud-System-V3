@@ -163,6 +163,14 @@ class WhitelistService {
     return false;
   }
 
+  async listPhones() {
+    if (!redisClient.isReady) return [];
+    try {
+      const rows = await db.all(`SELECT value, remark FROM sys_whitelist WHERE type = 'phone'`);
+      return rows.map(r => ({ phoneHash: r.value, remark: r.remark }));
+    } catch { return []; }
+  }
+
   async isWhitelisted(ip, deviceHash, phoneHash) {
     if (ip        && await this.isIpWhitelisted(ip))         return true;
     if (deviceHash && await this.isDeviceWhitelisted(deviceHash)) return true;

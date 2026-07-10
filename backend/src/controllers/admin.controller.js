@@ -373,15 +373,17 @@ class AdminController {
   // 查询白名单列表
   async getWhitelist(req, res, next) {
     try {
-      const [ips, devices] = await Promise.all([
+      const [ips, devices, phones] = await Promise.all([
         whitelistService.listIps(),
-        whitelistService.listDevices()
+        whitelistService.listDevices(),
+        whitelistService.listPhones()
       ]);
 
       return success(res, {
         ips:    ips    || [],
         devices: devices || [],
-        total:  (ips?.length || 0) + (devices?.length || 0)
+        phones: phones || [],
+        total:  (ips?.length || 0) + (devices?.length || 0) + (phones?.length || 0)
       }, '白名单查询成功');
     } catch (err) {
       next(err);
@@ -394,11 +396,15 @@ class AdminController {
       const { type, value, remark = '' } = req.body;
 
       if (!type || !value) {
-        return fail(res, 400, 40000, '缺少类型（ip/device）或白名单值');
+        return fail(res, 400, 40000, '缺少类型（ip/device/phone）或白名单值');
       }
 
-      if (!['ip', 'device'].includes(type)) {
-        return fail(res, 400, 40000, '类型必须为 ip 或 device');
+      if (!['ip', 'device', 'phone'].includes(type)) {
+        return fail(res, 400, 40000, '类型必须为 ip、device 或 phone');
+      }
+
+      if (type === 'phone' && !/^1[3-9]\d{9}$/.test(value.trim())) {
+        return fail(res, 400, 40000, '请输入有效的11位手机号');
       }
 
       // 记录审计日志
@@ -412,10 +418,15 @@ class AdminController {
       if (type === 'ip') {
         await whitelistService.addIp(value.trim(), remark, req.admin?.adminId);
         return success(res, { ip: value.trim() }, `IP ${value} 已加入白名单`);
-      } else {
+      } else if (type === 'device') {
         await whitelistService.addDevice(value.trim(), remark, req.admin?.adminId);
         const devicePreview = (value || '').substring(0, 16);
         return success(res, { deviceHash: value.trim() }, `设备 ${devicePreview}... 已加入白名单`);
+      } else {
+        const phoneHash = require('../utils/encryption').hashPhone(value.trim());
+        await whitelistService.addPhoneHash(phoneHash, req.admin?.adminId);
+        return success(res, { phone: value.substring(0,3) + '****' + value.substring(7) }, `手机号白名单已记录`);
+      }
       }
     } catch (err) {
       next(err);
