@@ -492,34 +492,14 @@ class AdminController {
         source = 'sys_blacklist';
       }
 
-      if (!deviceHash) {
-        // 🆕 未找到设备 → 直接存 phone hash，注册时 isWhitelisted 会命中 phone 白名单
-        await whitelistService.addPhoneHash(phoneHash, req.admin?.adminId);
-        auditService.logAction(req.admin.adminId, 'ADD_WHITELIST_BY_PHONE',
-          `phone→${phone.substring(0,3)}****${phone.substring(7)} (未注册/已清除)`, req.ip);
-        return success(res, { phone: phone.substring(0,3) + '****' + phone.substring(7) },
-          '手机号白名单已添加，该号码注册时将跳过风控黑名单');
-      }
-
-      // 3. 加入白名单（device + phone 双维度）
-      await whitelistService.addDevice(deviceHash, remark, req.admin?.adminId);
+      // 只存 phone hash 白名单，避免与 device 维度重复显示
       await whitelistService.addPhoneHash(phoneHash, req.admin?.adminId);
-
-      // 4. 审计日志
-      auditService.logAction(
-        req.admin.adminId,
-        'ADD_WHITELIST_BY_PHONE',
-        `phone→${phoneHash.substring(0, 16)}... device→${deviceHash.substring(0, 16)}...`,
-        req.ip
-      );
-
-      const devicePreview = deviceHash.substring(0, 16);
+      auditService.logAction(req.admin.adminId, 'ADD_WHITELIST_BY_PHONE',
+        `phone→${phone.substring(0,3)}****${phone.substring(7)}` + (deviceHash ? ` device→${deviceHash.substring(0,16)}...` : ''), req.ip);
       return success(res, {
-        deviceHash,
-        phone_hash: phoneHash,
-        source,
-        display: `${devicePreview}...`
-      }, `手机号关联设备 ${devicePreview}... 已加入白名单（来源：${source === 'sys_users' ? '活跃用户' : '注销沉淀库'}）`);
+        phone: phone.substring(0,3) + '****' + phone.substring(7),
+        deviceHash: deviceHash ? deviceHash.substring(0,16) : null
+      }, '手机号已加入白名单，注册时将跳过风控黑名单');
     } catch (err) {
       next(err);
     }
