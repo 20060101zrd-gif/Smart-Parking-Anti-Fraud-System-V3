@@ -40,6 +40,14 @@ async function bootstrap() {
 
     // 3. 连接 Redis 高速缓存 (自带降级，不阻塞主线程)
     await redisClient.connect();
+    // 🆕 清理旧封禁 key（config 迁移可能把 24h → 1min，但旧 key 仍残留在 Redis）
+    try {
+      const keys = await redisClient.scanKeys('risk:ip_bl:*');
+      for (const fullKey of keys) {
+        await redisClient.del(fullKey.replace(/^pf:/, ''));
+      }
+      if (keys.length > 0) console.log(`🧹 [Bootstrap] 已清理 ${keys.length} 个旧 IP 封禁 key`);
+    } catch (e) { /* 非关键 */ }
     auditQueue.start();//确保高危操作日志能每2秒批量落盘
     interceptLogQueue.start();//🆕 风控拦截日志每2秒异步刷盘
     
