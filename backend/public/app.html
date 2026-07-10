@@ -2,13 +2,18 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>停小券 - 免费停车券领取</title>
-  <link rel="stylesheet" href="/tailwind.css">
+  <link rel="stylesheet" href="/tailwind.css" onerror="console.warn('tailwind.css failed to load')">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#ede9fe 100%);min-height:100vh;display:flex;align-items:center;justify-content:center}
+    html{height:100%}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#ede9fe 100%);min-height:100vh;min-height:100dvh;min-height:-webkit-fill-available;display:flex;align-items:center;justify-content:center}
     input{outline:none}.page{display:none}.page.active{display:block}
+    /* 关键：不依赖 Tailwind CSS 的 hidden，防止 CSS 未加载时 loading 遮罩导致白屏 */
+    #loading,.hidden-until-css{display:none}
     .slide-track{position:relative;height:48px;background:#e5e7eb;border-radius:24px;overflow:hidden;touch-action:none}
     .slide-progress{position:absolute;left:0;top:0;height:100%;background:rgba(99,102,241,0.25);border-radius:24px;width:0%;transition:width 0.05s}
     .slide-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;font-weight:500}
@@ -17,7 +22,7 @@
     /* 拼图验证码：宽度由后端 CANVAS_WIDTH 决定，260=13×20cell 整除无边界漏白 */
     .captcha-canvas{position:relative;width:280px;height:150px;background:#94a3b8;border-radius:8px;overflow:hidden;outline:1px solid #e5e7eb;box-sizing:content-box;margin:0 auto}
     .captcha-canvas svg{width:100%;height:100%;display:block}
-    .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));z-index:10}
+    .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;box-shadow:0 2px 6px rgba(0,0,0,0.35);z-index:10}
     .captcha-piece:active{cursor:grabbing}
     .captcha-piece svg{width:100%;height:100%;display:block}
   </style>
@@ -27,7 +32,7 @@
 
     <!-- Logo (shared) -->
     <div id="logo" class="text-center mb-8">
-      <img src="assets/icon.jpg" alt="停小券" class="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-lg shadow-blue-200 object-cover">
+      <img src="assets/icon.jpg" alt="停小券" class="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-lg shadow-blue-200 object-cover" onerror="this.style.display='none'">
       <h1 id="logo-title" class="text-2xl font-extrabold text-gray-900">停小券</h1>
       <p id="logo-sub" class="text-sm text-gray-500 mt-1">免费停车券 · 一键领取</p>
     </div>
@@ -52,14 +57,14 @@
           </div>
         </div>
         <button id="register-btn" onclick="handleRegister()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all">注册领券</button>
-        <p id="register-error" class="text-center text-red-500 text-xs mt-3 hidden"></p>
+        <p id="register-error" class="text-center text-red-500 text-xs mt-3" style="display:none"></p>
       </div>
 
       <!-- ====== PAGE 2: Captcha ====== -->
       <div id="page-captcha" class="page text-center py-2">
         <p class="text-amber-600 font-semibold text-sm mb-2">⚠️ 检测到异常注册频率</p>
         <p class="text-gray-400 text-xs mb-2">请完成滑动拼图验证</p>
-        <div class="rounded-xl p-2 mb-2 border border-gray-200">          <div id="captcha-canvas" class="captcha-canvas"></div>
+        <div class="rounded-xl p-2 mb-2 border border-gray-200" style="position:relative">          <div id="captcha-canvas" class="captcha-canvas"></div>
           <div id="captcha-piece" class="captcha-piece"></div>
         </div>
         <!-- 🆕 滑轨 -->
@@ -103,7 +108,7 @@
     </div>
 
     <!-- Cancel Confirm Modal -->
-    <div id="cancel-confirm-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-6">
+    <div id="cancel-confirm-modal" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-6" style="display:none">
       <div class="bg-white rounded-2xl p-6 w-full max-w-xs">
         <p class="font-bold text-gray-900 mb-2">确认注销？</p>
         <p class="text-sm text-gray-500 mb-5">注销后停车券将失效，90 天内无法再次领取。</p>
@@ -125,14 +130,14 @@
         </div>
         <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-3">
           <p class="text-xs text-gray-500" id="blocked-hint">请于 90 天后重新尝试</p>
-          <p id="blocked-timer" class="text-sm font-bold text-red-600 hidden mt-1"></p>
+          <p id="blocked-timer" class="text-sm font-bold text-red-600 mt-1" style="display:none"></p>
         </div>
         <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm mb-2">返回首页</button>
-        <button id="blocked-retry-btn" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-semibold text-sm hidden" onclick="goRegister()">重新尝试</button>
+        <button id="blocked-retry-btn" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-semibold text-sm" style="display:none" onclick="goRegister()">重新尝试</button>
       </div>
 
       <!-- Loading overlay -->
-      <div id="loading" class="hidden absolute inset-0 bg-white/80 rounded-3xl flex items-center justify-center z-10">
+      <div id="loading" class="absolute inset-0 bg-white/80 rounded-3xl flex items-center justify-center z-10" style="display:none">
         <div class="flex flex-col items-center gap-2">
           <div class="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
           <span id="loading-txt" class="text-sm text-gray-500">提交中...</span>
@@ -170,9 +175,9 @@ function showPage(id) {
   document.getElementById('page-' + id).classList.add('active');
 }
 
-function showLoading(t) { document.getElementById('loading-txt').textContent = t; document.getElementById('loading').classList.remove('hidden'); }
-function hideLoading() { document.getElementById('loading').classList.add('hidden'); }
-function regError(m) { const e = document.getElementById('register-error'); e.textContent = m; e.classList.remove('hidden'); setTimeout(() => e.classList.add('hidden'), 4000); }
+function showLoading(t) { const el = document.getElementById('loading'); if(el){ el.style.display='flex'; document.getElementById('loading-txt').textContent = t; } }
+function hideLoading() { const el = document.getElementById('loading'); if(el) el.style.display='none'; }
+function regError(m) { const e = document.getElementById('register-error'); e.textContent = m; e.style.display = 'block'; setTimeout(() => { e.style.display = 'none'; }, 4000); }
 
 // ── Logout → Register ──
 function goRegister() {
@@ -200,20 +205,19 @@ function goHome() { showPage('home'); }
 let blockCountdownId = null, blockedSince = 0, blockedDuration = 60;
 function startBlockCountdown() {
   stopBlockCountdown();
-  // 🆕 首次封禁记时间，重复进入不重置
   if (!blockedSince) { blockedSince = Date.now(); blockedDuration = 60; }
   var timerEl = document.getElementById('blocked-timer');
   var retryBtn = document.getElementById('blocked-retry-btn');
   if (!timerEl || !retryBtn) return;
-  timerEl.classList.remove('hidden');
-  retryBtn.classList.add('hidden');
+  timerEl.style.display = 'block';
+  retryBtn.style.display = 'none';
   function tick() {
     var elapsed = Math.floor((Date.now() - blockedSince) / 1000);
     var remaining = Math.max(0, blockedDuration - elapsed);
     if (remaining <= 0) {
       timerEl.textContent = '封禁已到期，可以重试';
-      retryBtn.classList.remove('hidden');
-      blockedSince = 0; // 重置，下次封禁重新计时
+      retryBtn.style.display = 'block';
+      blockedSince = 0;
       return;
     }
     var m = Math.floor(remaining / 60);
@@ -226,9 +230,9 @@ function startBlockCountdown() {
 function stopBlockCountdown() {
   if (blockCountdownId) { clearTimeout(blockCountdownId); blockCountdownId = null; }
   var t = document.getElementById('blocked-timer');
-  if (t) { t.classList.add('hidden'); t.textContent = ''; }
+  if (t) { t.style.display = 'none'; t.textContent = ''; }
   var b = document.getElementById('blocked-retry-btn');
-  if (b) b.classList.add('hidden');
+  if (b) b.style.display = 'none';
 }
 
 // ═══════════════ REGISTER ═══════════════
@@ -301,8 +305,8 @@ function renderHome(u) {
 }
 
 // ═══════════════ CANCEL ═══════════════
-function showCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.remove('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'flex'; }
-function hideCancelConfirm() { document.getElementById('cancel-confirm-modal').classList.add('hidden'); document.getElementById('cancel-confirm-modal').style.display = 'none'; }
+function showCancelConfirm() { document.getElementById('cancel-confirm-modal').style.display = 'flex'; }
+function hideCancelConfirm() { document.getElementById('cancel-confirm-modal').style.display = 'none'; }
 function resetCancelBtn() { const btn = document.getElementById('cancel-btn'); btn.disabled = false; btn.textContent = '确认注销账号'; }
 async function doCancel() {
   hideCancelConfirm();
@@ -515,7 +519,7 @@ function resetCaptcha() {
 }
 
 // ── Init: restore session + captcha handlers ──
-(function() {
+function doInit() {
   try {
     capInit();
     var u = localStorage.getItem('parking_user');
@@ -527,9 +531,17 @@ function resetCaptcha() {
     }
   } catch (e) {
     // 手机上初始化失败时不要崩溃，保持注册页可见
+    // fallback: 确保至少注册页可见
+    document.querySelector('.page.active') || showPage('register');
     console.error('[init]', e);
   }
-})();
+}
+// 等待 DOM 就绪后再初始化（修复手机白屏）
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', doInit);
+} else {
+  doInit();
+}
 </script>
 </body>
 </html>
