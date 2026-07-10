@@ -324,39 +324,53 @@ class RiskService {
       entry.count++;
       this._memCaptchaFail.set(ip, entry);
       const c = entry.count;
-  console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${c}/${captchaFailMax}) [内存]`);
-  if (c >= captchaFailMax) {
-    this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${c}`, ipBlTtl);
-    // 🆕 清除计数器，解封后给用户一个干净的起点
-    this._memCaptchaFail.delete(ip);
-    this._memIpBl.delete(`limit:reg_ip:${ip}`);
-    interceptLog.logIntercept(ip, '', `连续${c}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
-  }
-  return c;
+      console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${c}/${captchaFailMax}) [内存]`);
+      if (c >= captchaFailMax) {
+        this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${c}`, ipBlTtl || 60);
+        this._memCaptchaFail.delete(ip);
+        this._memIpBl.delete(`limit:reg_ip:${ip}`);
+        interceptLog.logIntercept(ip, '', `连续${c}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
+      }
+      return c;
     }
 
-    const failKey = `risk:captcha_fail:${ip}`;
-    const fullKey = `${redisClient.prefix}${failKey}`;
+    // 🆕 统一使用 raw Redis client（pf: 前缀），避免 wrapper 的 isReady 吞操作
+    const P = redisClient.prefix;
+    const failKey = `${P}risk:captcha_fail:${ip}`;
+    const banKey  = `${P}risk:ip_bl:${ip}`;
 
     try {
-      const count = await redisClient.client.incr(fullKey);
+      const count = await redisClient.client.incr(failKey);
       if (count === 1) {
-        await redisClient.client.expire(fullKey, this.CAPTCHA_FAIL_WINDOW);
+        await redisClient.client.expire(failKey, this.CAPTCHA_FAIL_WINDOW);
       }
       console.warn(`[RiskService] IP ${ip} 滑块验证失败 (${count}/${captchaFailMax})`);
+
       if (count >= captchaFailMax) {
-        // 🆕 保证 TTL 最小 60s（防止配置错误导致 0 秒封禁）
-        var finalTtl = (ipBlTtl && ipBlTtl > 0) ? ipBlTtl : 60;
-        var setOk = await redisClient.set(`risk:ip_bl:${ip}`, `captcha_fail_x${count}`, Math.round(finalTtl));
-        // 🆕 清除验证失败计数和注册频控计数，解封后给用户一个干净的起点
-        await redisClient.del(`risk:captcha_fail:${ip}`);
-        await redisClient.del(`limit:reg_ip:${ip}`);
-        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已加入临时黑名单 TTL=${finalTtl}s setOk=${setOk}`);
+        const finalTtl = Math.round((ipBlTtl && ipBlTtl > 0) ? ipBlTtl : 60);
+        // 🆕 用 raw client 直接 setEx，不经过 wrappper 的 isReady gate
+        const setReply = await redisClient.client.setEx(banKey, finalTtl, `captcha_fail_x${count}`);
+        console.warn(`[RiskService] ⛔ IP ${ip} 连续${count}次验证失败，已加入临时黑名单 TTL=${finalTtl}s reply=${setReply}`);
+        // 清除失败计数 & 注册频控计数
+        await redisClient.client.del(failKey);
+        await redisClient.client.del(`${P}limit:reg_ip:${ip}`);
         interceptLog.logIntercept(ip, '', `连续${count}次滑块验证失败，自动加入IP临时黑名单`, 'MEDIUM');
       }
       return count;
     } catch (err) {
       console.error('[RiskService] 验证失败计数异常:', err.message);
+      // 🆕 内存兜底：Redis 操作抛异常时仍封禁 IP
+      if (!redisClient.isReady) {
+        const entry = this._memCaptchaFail.get(ip) || { count: 0 };
+        entry.count++;
+        this._memCaptchaFail.set(ip, entry);
+        if (entry.count >= captchaFailMax) {
+          this._memSetWithTTL(`ipbl:${ip}`, `captcha_fail_x${entry.count}`, ipBlTtl || 60);
+          this._memCaptchaFail.delete(ip);
+          interceptLog.logIntercept(ip, '', `连续${entry.count}次滑块验证失败(内存降级)，自动加入IP临时黑名单`, 'MEDIUM');
+        }
+        return entry.count;
+      }
       return 0;
     }
   }

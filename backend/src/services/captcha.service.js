@@ -42,33 +42,18 @@ class CaptchaService {
   }
 
   /**
-   * 🆕 根据种子生成随机噪声点（deterministic per captchaId）
-   */
-  _generateNoise(seed, count, maxX, maxY) {
-    const hash = crypto.createHash('sha256').update(seed).digest('hex');
-    let noise = '';
-    for (let i = 0; i < count; i++) {
-      const cx = parseInt(hash.substring(i * 6, i * 6 + 3), 16) % maxX;
-      const cy = parseInt(hash.substring(i * 6 + 3, i * 6 + 6), 16) % maxY;
-      const r = (parseInt(hash.charAt(i % 64), 16) % 3) + 2;
-      const shade = parseInt(hash.substring((i * 2) % 56, (i * 2) % 56 + 2), 16) % 50 + 180;
-      noise += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.7"/>`;
-    }
-    return noise;
-  }
-
-  /**
    * 🆕 生成背景 SVG（含缺口）
    * answerX/answerY 仅用于渲染缺口位，不会返回给前端
    */
   _generateBackgroundSvg(captchaId, answerX, answerY) {
     const pattern = this._generatePattern(captchaId, 0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}">
-  <rect width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="#e2e8f0"/>
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" viewBox="0 0 ${this.CANVAS_WIDTH} ${this.CANVAS_HEIGHT}">
+  <!-- 底色：深灰，让白色缺口和彩色图案都清晰可见 -->
+  <rect width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="#94a3b8"/>
   ${pattern}
-  <text x="${Math.floor(this.CANVAS_WIDTH / 2)}" y="18" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">滑动拼图验证</text>
-  <!-- 缺口：白色镂空 + 虚线边框 -->
-  <rect x="${answerX}" y="${answerY}" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#f8fafc" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
+  <text x="${Math.floor(this.CANVAS_WIDTH / 2)}" y="18" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="sans-serif">滑动拼图验证</text>
+  <!-- 缺口：纯白镂空 + 虚线边框 -->
+  <rect x="${answerX}" y="${answerY}" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#ffffff" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
 </svg>`;
   }
 
@@ -78,6 +63,8 @@ class CaptchaService {
   _generatePuzzleSvg(captchaId, answerX, answerY) {
     const pattern = this._generatePattern(captchaId, answerX, answerY, this.PUZZLE_WIDTH, this.PUZZLE_HEIGHT);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}">
+  <!-- 拼图块先画纯白底，再画图案，保证不透明 -->
+  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#ffffff"/>
   ${pattern}
   <!-- 边框与缺口虚线一致，对齐后融为一体 -->
   <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
@@ -105,7 +92,7 @@ class CaptchaService {
         if (rw <= 0 || rh <= 0) continue;
 
         const idx = ((gy * cols + gx) * 2) % 64;
-        const shade = parseInt(hash.substr(idx, 2), 16) % 40 + 200;
+        const shade = parseInt(hash.substring(idx, idx + 2), 16) % 80 + 120;
         const lx = cx + rx - x;
         const ly = cy + ry - y;
         shapes += `<rect x="${lx}" y="${ly}" width="${rw}" height="${rh}" fill="rgb(${shade},${shade+5},${shade+10})"/>`;
@@ -114,12 +101,12 @@ class CaptchaService {
 
     // 随机噪声点（与缺口位置完全匹配）
     for (let i = 0; i < 15; i++) {
-      const cx = parseInt(hash.substr(i * 4, 3), 16) % this.CANVAS_WIDTH;
-      const cy = parseInt(hash.substr(i * 4 + 3, 3), 16) % this.CANVAS_HEIGHT;
+      const cx = parseInt(hash.substring(i * 4, i * 4 + 3), 16) % this.CANVAS_WIDTH;
+      const cy = parseInt(hash.substring(i * 4 + 3, i * 4 + 6), 16) % this.CANVAS_HEIGHT;
       const r = (parseInt(hash.charAt(i * 2), 16) % 3) + 2;
       if (cx >= x && cx < x + width && cy >= y && cy < y + height) {
-        const shade = parseInt(hash.substr((i * 2 + 32) % 64, 2), 16) % 50 + 160;
-        shapes += `<circle cx="${cx - x}" cy="${cy - y}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.7"/>`;
+        const shade = parseInt(hash.substring((i * 2 + 32) % 64, ((i * 2 + 32) % 64) + 2), 16) % 60 + 100;
+        shapes += `<circle cx="${cx - x}" cy="${cy - y}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.8"/>`;
       }
     }
 

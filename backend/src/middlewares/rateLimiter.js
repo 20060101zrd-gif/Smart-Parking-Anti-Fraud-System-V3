@@ -90,10 +90,11 @@ const rateLimiter = (type) => {
       if (!redisClient.isReady) return next();
       try {
         const ip = extractIp(req);
-        const isBlacklisted = await redisClient.get(`risk:ip_bl:${ip}`);
+        // 🆕 用 raw client 直接读，与 recordCaptchaFailure 写 key 保持同一路径
+        const isBlacklisted = await redisClient.client.get(`pf:risk:ip_bl:${ip}`);
         if (isBlacklisted) {
-          interceptLog.logIntercept(ip, '', 'IP命中24小时临时黑名单', 'HIGH');
-          return fail(res, 403, 40302, 'IP已被临时封禁（24小时），请稍后再试');
+          interceptLog.logIntercept(ip, '', 'IP命中临时黑名单', 'HIGH');
+          return fail(res, 403, 40302, 'IP已被临时封禁，请稍后再试');
         }
         return next();
       } catch (err) {
