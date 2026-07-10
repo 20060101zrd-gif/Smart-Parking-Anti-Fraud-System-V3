@@ -108,9 +108,9 @@
 |:---:|:---:|:---:|
 | ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
 
-| 滑块验证 (IP频控) | 注销确认 |
-|:---:|:---:|
-| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-cancel-account.jpg) |
+| 滑块验证 (IP频控) | 风控拦截 (验证失败) | 注销确认 |
+|:---:|:---:|:---:|
+| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-captcha-fail.jpg) | ![](screenshots/c-cancel-account.jpg) |
 
 | 风控拦截 (手机号注销库) | 风控拦截 (设备黑名单) | 风控拦截 (设备注册超限) |
 |:---:|:---:|:---:|

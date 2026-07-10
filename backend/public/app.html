@@ -14,8 +14,8 @@
     .slide-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;font-weight:500}
     .slide-thumb{position:absolute;left:0;top:0;width:48px;height:48px;background:#6366f1;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;z-index:2;cursor:grab;user-select:none}
     .slide-thumb:active{cursor:grabbing}
-    /* 🆕 拼图验证码：固定 280x150 与 SVG 原始尺寸一致，确保拼图块与缺口像素级对齐 */
-    .captcha-canvas{position:relative;width:280px;height:150px;background:#94a3b8;border-radius:8px;overflow:hidden;outline:1px solid #e5e7eb;box-sizing:content-box}
+    /* 拼图验证码：宽度由后端 CANVAS_WIDTH 决定，260=13×20cell 整除无边界漏白 */
+    .captcha-canvas{position:relative;width:280px;height:150px;background:#94a3b8;border-radius:8px;overflow:hidden;outline:1px solid #e5e7eb;box-sizing:content-box;margin:0 auto}
     .captcha-canvas svg{width:100%;height:100%;display:block}
     .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));z-index:10}
     .captcha-piece:active{cursor:grabbing}
@@ -59,8 +59,7 @@
       <div id="page-captcha" class="page text-center py-2">
         <p class="text-amber-600 font-semibold text-sm mb-2">⚠️ 检测到异常注册频率</p>
         <p class="text-gray-400 text-xs mb-2">请完成滑动拼图验证</p>
-        <div class="bg-gray-50 rounded-xl p-2 mb-2 border border-gray-200 relative">
-          <div id="captcha-canvas" class="captcha-canvas"></div>
+        <div class="rounded-xl p-2 mb-2 border border-gray-200">          <div id="captcha-canvas" class="captcha-canvas"></div>
           <div id="captcha-piece" class="captcha-piece"></div>
         </div>
         <!-- 🆕 滑轨 -->
@@ -384,16 +383,20 @@ function renderCaptcha(data) {
   if (isNaN(rawY) || rawY < 0 || rawY > data.canvas.height) rawY = (data.canvas.height - data.puzzle.height) / 2;
   capPieceY = Math.round(rawY * capScale);
 
-  // 背景 SVG：填满整个 canvas 容器，不残留白边
+  // 背景 SVG：viewBox + preserveAspectRatio=none 确保无缝填充，不留白边
   capCanvas.innerHTML = data.backgroundSvg;
   var bgSvg = capCanvas.querySelector('svg');
   if (bgSvg) {
-    bgSvg.setAttribute('width', '280');
-    bgSvg.setAttribute('height', '150');
+    var w = data.canvas.width, h = data.canvas.height;
+    bgSvg.setAttribute('width', w);
+    bgSvg.setAttribute('height', h);
     bgSvg.setAttribute('preserveAspectRatio', 'none');
-    bgSvg.style.width = '280px';
-    bgSvg.style.height = '150px';
+    bgSvg.style.width = w + 'px';
+    bgSvg.style.height = h + 'px';
   }
+
+  // 把拼图块移进 canvas 内部，成为子元素，定位与缺口完全对应
+  capCanvas.appendChild(capPiece);
 
   // 拼图块 SVG（与缺口位图案完全一致）
   capPiece.innerHTML = data.puzzleSvg;
@@ -472,11 +475,13 @@ function capEnd() {
 
 async function verifyCaptcha(sliderX) {
   document.getElementById('cap-status').textContent = '验证中...';
+  console.log('[verify] capPieceX=' + capPieceX.toFixed(1) + ' capScale=' + capScale + ' serverX=' + sliderX);
   try {
     const v = await fetch(API + '/captcha/verify', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ captchaId: capData.captchaId, sliderX })
     }).then(r => r.json());
+    console.log('[verify] response code=' + v.code + ' msg=' + (v.message||'') + ' deviation=' + (v.data?.deviation||'N/A'));
     if (v.code === 20000) {
       document.getElementById('cap-status').textContent = '✅ 验证通过';
       document.getElementById('captcha-hint').textContent = '✅ 验证通过';

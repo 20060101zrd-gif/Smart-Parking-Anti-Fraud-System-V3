@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#94a3b8',
   },
   canvasSvgArea: {
     position: 'absolute',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   },
   canvasPlaceholder: {
     flex: 1,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#94a3b8',
     justifyContent: 'center',
     alignItems: 'center',
   },

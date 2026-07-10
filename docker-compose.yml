@@ -24,7 +24,8 @@ services:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - ENCRYPT_KEY=${ENCRYPT_KEY}
     volumes:
-      - ./backend/.keys:/app/.keys
+      - ./backend:/app
+      - /app/node_modules
     mem_limit: 512m
     restart: always
 

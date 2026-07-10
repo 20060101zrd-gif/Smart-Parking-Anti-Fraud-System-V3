@@ -46,15 +46,14 @@ class CaptchaService {
    * answerX/answerY 仅用于渲染缺口位，不会返回给前端
    */
   _generateBackgroundSvg(captchaId, answerX, answerY) {
-    // +1 触发最后一个 1px cell，确保最右侧不会漏白边
-    const pattern = this._generatePattern(captchaId, 0, 0, this.CANVAS_WIDTH + 1, this.CANVAS_HEIGHT + 1);
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" viewBox="0 0 ${this.CANVAS_WIDTH} ${this.CANVAS_HEIGHT}">
-  <!-- 底色：深灰，让白色缺口和彩色图案都清晰可见 -->
+    const pattern = this._generatePattern(captchaId, 0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" viewBox="0 0 ${this.CANVAS_WIDTH} ${this.CANVAS_HEIGHT}" preserveAspectRatio="none">
   <rect x="0" y="0" width="${this.CANVAS_WIDTH}" height="${this.CANVAS_HEIGHT}" fill="#94a3b8"/>
   ${pattern}
   <text x="${Math.floor(this.CANVAS_WIDTH / 2)}" y="18" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="sans-serif">滑动拼图验证</text>
-  <!-- 缺口：纯白镂空 + 虚线边框 -->
-  <rect x="${answerX}" y="${answerY}" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#ffffff" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
+  <!-- 缺口：白色圆角底 + 内缩1px虚线边框（避免stroke被视口裁切） -->
+  <rect x="${answerX}" y="${answerY}" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#ffffff" rx="4"/>
+  <rect x="${answerX + 1}" y="${answerY + 1}" width="${this.PUZZLE_WIDTH - 2}" height="${this.PUZZLE_HEIGHT - 2}" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
 </svg>`;
   }
 
@@ -63,12 +62,11 @@ class CaptchaService {
    */
   _generatePuzzleSvg(captchaId, answerX, answerY) {
     const pattern = this._generatePattern(captchaId, answerX, answerY, this.PUZZLE_WIDTH, this.PUZZLE_HEIGHT);
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}">
-  <!-- 拼图块先画纯白底，再画图案，保证不透明 -->
-  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#ffffff"/>
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" viewBox="0 0 ${this.PUZZLE_WIDTH} ${this.PUZZLE_HEIGHT}" preserveAspectRatio="none">
+  <!-- 拼图块白色圆角底 + 图案 + 内缩虚线边框（防stroke裁切） -->
+  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="#ffffff" rx="4"/>
   ${pattern}
-  <!-- 边框与缺口虚线一致，对齐后融为一体 -->
-  <rect x="0" y="0" width="${this.PUZZLE_WIDTH}" height="${this.PUZZLE_HEIGHT}" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
+  <rect x="1" y="1" width="${this.PUZZLE_WIDTH - 2}" height="${this.PUZZLE_HEIGHT - 2}" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3" rx="4"/>
 </svg>`;
   }
 
@@ -93,10 +91,15 @@ class CaptchaService {
         if (rw <= 0 || rh <= 0) continue;
 
         const idx = ((gy * cols + gx) * 2) % 64;
+        // 以底色 #94a3b8(r=148,g=163,b=184,avg≈165) 为基准，shade控制明度偏移
         const shade = parseInt(hash.substring(idx, idx + 2), 16) % 80 + 120;
+        const off = Math.round(shade - 165);
+        const cr = Math.max(0, Math.min(255, 148 + off));
+        const cg = Math.max(0, Math.min(255, 163 + off));
+        const cb = Math.max(0, Math.min(255, 184 + off));
         const lx = cx + rx - x;
         const ly = cy + ry - y;
-        shapes += `<rect x="${lx}" y="${ly}" width="${rw}" height="${rh}" fill="rgb(${shade},${shade+5},${shade+10})"/>`;
+        shapes += `<rect x="${lx}" y="${ly}" width="${rw}" height="${rh}" fill="rgb(${cr},${cg},${cb})"/>`;
       }
     }
 
@@ -106,8 +109,12 @@ class CaptchaService {
       const cy = parseInt(hash.substring(i * 4 + 3, i * 4 + 6), 16) % this.CANVAS_HEIGHT;
       const r = (parseInt(hash.charAt(i * 2), 16) % 3) + 2;
       if (cx >= x && cx < x + width && cy >= y && cy < y + height) {
-        const shade = parseInt(hash.substring((i * 2 + 32) % 64, ((i * 2 + 32) % 64) + 2), 16) % 60 + 100;
-        shapes += `<circle cx="${cx - x}" cy="${cy - y}" r="${r}" fill="rgb(${shade},${shade+5},${shade+10})" opacity="0.8"/>`;
+        const nshade = parseInt(hash.substring((i * 2 + 32) % 64, ((i * 2 + 32) % 64) + 2), 16) % 60 + 100;
+        const noff = Math.round(nshade - 165);
+        const nr = Math.max(0, Math.min(255, 148 + noff));
+        const ng = Math.max(0, Math.min(255, 163 + noff));
+        const nb = Math.max(0, Math.min(255, 184 + noff));
+        shapes += `<circle cx="${cx - x}" cy="${cy - y}" r="${r}" fill="rgb(${nr},${ng},${nb})" opacity="0.8"/>`;
       }
     }
 
@@ -220,6 +227,7 @@ class CaptchaService {
 
     const correctX = parseInt(answerXStr, 10);
     const deviation = Math.abs(sliderX - correctX);
+    console.log(`[Captcha] 🔍 验证 id=${captchaId} sliderX=${sliderX} correctX=${correctX} deviation=${deviation}px tolerance=${this.TOLERANCE_PX}px`);
 
     // ⚠️ 立即删除答案，无论校验结果如何 — 防止重放攻击
     await redisClient.del(answerKey);
