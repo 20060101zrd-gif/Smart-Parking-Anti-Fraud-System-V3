@@ -427,7 +427,6 @@ class AdminController {
         await whitelistService.addPhoneHash(phoneHash, req.admin?.adminId);
         return success(res, { phone: value.substring(0,3) + '****' + value.substring(7) }, `手机号白名单已记录`);
       }
-      }
     } catch (err) {
       next(err);
     }
@@ -439,28 +438,24 @@ class AdminController {
       const { type, value } = req.body;
 
       if (!type || !value) {
-        return fail(res, 400, 40000, '缺少类型（ip/device）或白名单值');
+        return fail(res, 400, 40000, '缺少类型（ip/device/phone）或白名单值');
       }
 
-      if (!['ip', 'device'].includes(type)) {
-        return fail(res, 400, 40000, '类型必须为 ip 或 device');
+      if (!['ip', 'device', 'phone'].includes(type)) {
+        return fail(res, 400, 40000, '类型必须为 ip、device 或 phone');
       }
 
-      // 记录审计日志
-      auditService.logAction(
-        req.admin.adminId,
-        'REMOVE_WHITELIST',
-        `${type}:${value}`,
-        req.ip
-      );
+      auditService.logAction(req.admin.adminId, 'REMOVE_WHITELIST', `${type}:${value}`, req.ip);
 
       if (type === 'ip') {
         await whitelistService.removeIp(value.trim());
         return success(res, { ip: value.trim() }, `IP ${value} 已移出白名单`);
-      } else {
+      } else if (type === 'device') {
         await whitelistService.removeDevice(value.trim());
-        const devicePreview = (value || '').substring(0, 16);
-        return success(res, { deviceHash: value.trim() }, `设备 ${devicePreview}... 已移出白名单`);
+        return success(res, { deviceHash: value.trim() }, `设备 ${value.substring(0,16)}... 已移出白名单`);
+      } else {
+        await whitelistService.removePhoneHash(value.trim());
+        return success(res, { phoneHash: value.trim() }, `手机号白名单已移出`);
       }
     } catch (err) {
       next(err);
