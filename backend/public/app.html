@@ -15,7 +15,7 @@
     .slide-thumb{position:absolute;left:0;top:0;width:48px;height:48px;background:#6366f1;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;z-index:2;cursor:grab;user-select:none}
     .slide-thumb:active{cursor:grabbing}
     /* 🆕 拼图验证码：固定 280x150 与 SVG 原始尺寸一致，确保拼图块与缺口像素级对齐 */
-    .captcha-canvas{position:relative;width:280px;height:150px;background:#f8fafb;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
+    .captcha-canvas{position:relative;width:280px;height:150px;background:#e2e8f0;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
     .captcha-canvas svg{width:100%;height:100%;display:block}
     .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));z-index:10}
     .captcha-piece:active{cursor:grabbing}
@@ -388,10 +388,11 @@ function renderCaptcha(data) {
   capCanvas.innerHTML = data.backgroundSvg;
   var bgSvg = capCanvas.querySelector('svg');
   if (bgSvg) {
-    bgSvg.setAttribute('width', '100%');
-    bgSvg.setAttribute('height', '100%');
-    bgSvg.style.width = '100%';
-    bgSvg.style.height = '100%';
+    bgSvg.setAttribute('width', '280');
+    bgSvg.setAttribute('height', '150');
+    bgSvg.setAttribute('preserveAspectRatio', 'none');
+    bgSvg.style.width = '280px';
+    bgSvg.style.height = '150px';
   }
 
   // 拼图块 SVG（与缺口位图案完全一致）
