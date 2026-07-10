@@ -113,13 +113,15 @@ class ConfigService {
     }
     // 🆕 迁移：将旧默认值强制同步为新默认值（不影响管理员手动修改后的值）
     const migrations = [
-      { key: 'ip_register_limit', oldVal: '5', newVal: String(ConfigService.DEFAULTS.ip_register_limit) },
-      { key: 'ip_blocklist_ttl_hours', oldVal: '24', newVal: String(ConfigService.DEFAULTS.ip_blocklist_ttl_hours) },
+      { key: 'ip_register_limit', oldVals: ['5','5.0'], newVal: String(ConfigService.DEFAULTS.ip_register_limit) },
+      { key: 'ip_blocklist_ttl_hours', oldVals: ['24','24.0'], newVal: String(ConfigService.DEFAULTS.ip_blocklist_ttl_hours) },
     ];
     for (const m of migrations) {
+      const placeholders = m.oldVals.map(() => '?').join(',');
+      const params = [m.newVal, m.key, ...m.oldVals.map(v => v)];
       const result = await db.run(
-        `UPDATE sys_config SET config_value = ? WHERE config_key = ? AND config_value = ?`,
-        [m.newVal, m.key, m.oldVal]
+        `UPDATE sys_config SET config_value = ? WHERE config_key = ? AND config_value IN (${placeholders})`,
+        params
       );
       if (result && result.changes > 0) {
         // 🆕 旧 24h 封禁迁移为 1min 时，清理 Redis 中所有旧的长效 IP 封禁 key

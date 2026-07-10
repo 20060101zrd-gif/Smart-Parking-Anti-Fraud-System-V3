@@ -52,6 +52,12 @@ async function bootstrap() {
       }
       if (keys.length > 0) console.log(`🧹 [Bootstrap] 已清理 ${keys.length} 个旧 IP 封禁 key`);
     } catch (e) { /* 非关键 */ }
+    // 🆕 验证风控配置
+    try {
+      const cfg = require('./services/config.service');
+      const all = await cfg.getAll();
+      console.log(`📋 [Bootstrap] ip_blocklist_ttl_hours=${all.ip_blocklist_ttl_hours} captcha_fail_max=${all.captcha_fail_max} ip_register_limit=${all.ip_register_limit}`);
+    } catch (e) {}
     auditQueue.start();//确保高危操作日志能每2秒批量落盘
     interceptLogQueue.start();//🆕 风控拦截日志每2秒异步刷盘
     
