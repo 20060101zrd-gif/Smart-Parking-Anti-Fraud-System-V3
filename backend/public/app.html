@@ -334,7 +334,7 @@ async function doRegister(captchaToken) {
     const r = await fetch(API + ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json();
     if (d.code === 20000) {
-      const u = { phone: _phone, hasCoupon: d.data.hasCoupon ?? true, isExisting: d.data.isExisting ?? false };
+      const u = { phone: _phone, hasCoupon: d.data.hasCoupon != null ? d.data.hasCoupon : true, isExisting: d.data.isExisting != null ? d.data.isExisting : false };
       localStorage.setItem('parking_user', JSON.stringify(u));
       renderHome(u);
       showPage('home');
@@ -568,7 +568,7 @@ async function verifyCaptcha(sliderX) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ captchaId: capData.captchaId, sliderX })
     }).then(r => r.json());
-    console.log('[verify] response code=' + v.code + ' msg=' + (v.message||'') + ' deviation=' + (v.data?.deviation||'N/A'));
+    console.log('[verify] response code=' + v.code + ' msg=' + (v.message||'') + ' deviation=' + ((v.data && v.data.deviation)||'N/A'));
     if (v.code === 20000) {
       document.getElementById('cap-status').textContent = '✅ 验证通过';
       document.getElementById('captcha-hint').textContent = '✅ 验证通过';
