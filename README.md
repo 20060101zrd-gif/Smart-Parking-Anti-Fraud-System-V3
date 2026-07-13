@@ -502,7 +502,7 @@ parking-fraud-system/
 
 `http://parking-guard-v3.abrdns.com/app.html`
 
-<img src="qr-code.png" width="220" alt="QR Code">
+<img src="qr-code (3).png" width="220" alt="QR Code">
 
 ---
 
