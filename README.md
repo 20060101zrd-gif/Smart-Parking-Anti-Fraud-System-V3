@@ -108,7 +108,7 @@
 
 <p align="center">
   <img src="screenshots/c-register-page.png" width="32%" alt="注册页"/>
-  &nbsp;
+  &nbsp;&nbsp;
   <img src="screenshots/c-register-success.jpg" width="32%" alt="注册成功"/>
 </p>
 <p align="center"><sub>左：注册页 &nbsp; 右：注册成功</sub></p>
