@@ -107,11 +107,11 @@
 **场景一：新手机号注册领券** — 输入手机号与姓名，点击「注册领券」即完成注册并领取停车券。
 
 <p align="center">
-  <img src="screenshots/c-register-page.png" width="32%" alt="注册页"/>
+  <img src="screenshots/c-register-page.png" width="32%" style="aspect-ratio:1170/2133;object-fit:contain;" alt="注册&登陆页"/>
   &nbsp;&nbsp;
-  <img src="screenshots/c-register-success.jpg" width="32%" alt="注册成功"/>
+  <img src="screenshots/c-register-success.jpg" width="32%" style="aspect-ratio:1170/2133;object-fit:contain;" alt="注册成功"/>
 </p>
-<p align="center"><sub>左：注册页 &nbsp; 右：注册成功</sub></p>
+<p align="center"><sub>左：注册&登陆页 &nbsp; 右：注册成功</sub></p>
 
 **场景二：老用户再登录** — 同一手机号再次注册时，系统识别为老用户，展示已领取的停车券状态。
 
