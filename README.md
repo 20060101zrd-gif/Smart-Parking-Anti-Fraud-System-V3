@@ -120,7 +120,7 @@
 </p>
 <p align="center"><sub>欢迎回来！停车券已领取，无需重复操作。</sub></p>
 
-**场景三：注销后同号重注，被惜统拒绝** — 已注销手机号进入永久黑名单，再次注册直接拒绝。
+**场景三：注销后同号重注，被系统拒绝** — 已注销手机号进入永久黑名单，再次注册直接拒绝。
 
 <p align="center">
   <img src="screenshots/c-cancel-account.jpg" width="32%" alt="注销账号"/>
