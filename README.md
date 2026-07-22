@@ -201,6 +201,12 @@
   <img src="screenshots/b-users-management.png" width="90%" alt="用户管理"/>
 </p>
 
+**管理员管理** — 查看管理员列表、启用/禁用、强制下线（含操作日志、登录日志 JTI 完整链路）
+
+<p align="center">
+  <img src="screenshots/b-admin-management.png" width="90%" alt="管理员管理"/>
+</p>
+
 ### 基础设施
 
 **Docker 容器** — 三个服务（backend / redis / mysql）全部运行中
