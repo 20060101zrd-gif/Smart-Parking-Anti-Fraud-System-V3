@@ -162,7 +162,7 @@
 **安全登录** — Argon2id 密码校验 + RS256 JWT
 
 <p align="center">
-  <img src="screenshots/b-admin-login.png" width="60%" alt="管理后台登录"/>
+  <img src="screenshots/b-admin-login.png" width="90%" alt="管理后台登录"/>
 </p>
 
 **风控监控大盘** — 实时拦截趋势、用户统计、黑名单数
@@ -202,6 +202,8 @@
 </p>
 
 **管理员管理** — 查看管理员列表、启用/禁用、强制下线（含操作日志、登录日志 JTI 完整链路）
+
+> 🔐 **权限说明**：仅 **超级管理员（super_admin）** 才能看到「管理员管理」入口并执行新增/禁用/删除/下线操作；**普通管理员（admin）** 登录后侧边栏不显示该入口，强行访问 API 会被 `superAdminOnly` 中间件拦截并返回 403。
 
 <p align="center">
   <img src="screenshots/b-admin-management.png" width="90%" alt="管理员管理"/>
