@@ -104,65 +104,128 @@
 
 ### C 端（手机）
 
-| 注册页面 | 注册成功 | 已有优惠券 |
-|:---:|:---:|:---:|
-| ![](screenshots/c-register-page.jpg) | ![](screenshots/c-register-success.jpg) | ![](screenshots/c-coupon-active.jpg) |
+**场景一：新手机号注册领券** — 输入手机号与姓名，点击「注册领券」即完成注册并领取停车券。
 
-| 滑块验证 (IP频控) | 风控拦截 (验证失败) | 注销确认 |
-|:---:|:---:|:---:|
-| ![](screenshots/c-captcha-slider.jpg) | ![](screenshots/c-captcha-fail.jpg) | ![](screenshots/c-cancel-account.jpg) |
+<p align="center">
+  <img src="screenshots/c-register-page.png" width="32%" alt="注册页"/>
+  &nbsp;
+  <img src="screenshots/c-register-success.jpg" width="32%" alt="注册成功"/>
+</p>
+<p align="center"><sub>左：注册页 &nbsp; 右：注册成功</sub></p>
 
-| 风控拦截 (手机号注销库) | 风控拦截 (设备黑名单) | 风控拦截 (设备注册超限) |
-|:---:|:---:|:---:|
-| ![](screenshots/c-risk-blocked.jpg) | ![](screenshots/c-risk-device-blocked.jpg) | ![](screenshots/c-risk-device-limit.jpg) |
+**场景二：老用户再登录** — 同一手机号再次注册时，系统识别为老用户，展示已领取的停车券状态。
+
+<p align="center">
+  <img src="screenshots/c-coupon-active.jpg" width="32%" alt="老用户欢迎回来"/>
+</p>
+<p align="center"><sub>欢迎回来！停车券已领取，无需重复操作。</sub></p>
+
+**场景三：注销后同号重注，被永久拒绝** — 已注销手机号进入永久黑名单，再次注册直接拒绝。
+
+<p align="center">
+  <img src="screenshots/c-cancel-account.jpg" width="32%" alt="注销账号"/>
+  &nbsp;
+  <img src="screenshots/c-risk-blocked.jpg" width="32%" alt="重注被拒"/>
+</p>
+<p align="center"><sub>左：注销账号 &nbsp; 右：同号重注被拒</sub></p>
+
+**场景四：同 IP 60 秒内注册超 2 次，触发滑块验证** — 高频注册触发人机验证，需拖拽拼图对齐缺口。
+
+<p align="center">
+  <img src="screenshots/c-captcha-slider.png" width="32%" alt="滑块验证码"/>
+</p>
+<p align="center"><sub>确保操作者是真人，防止自动化脚本批量注册。</sub></p>
+
+**场景五：同一设备注册第 4 个账号，被拒绝** — 系统通过设备指纹追踪，单设备上限 3 个，超出直接拒绝。
+
+<p align="center">
+  <img src="screenshots/c-risk-device-limit.jpg" width="32%" alt="设备注册上限"/>
+</p>
+<p align="center"><sub>单设备最多注册 3 个账号，防止一人多号。</sub></p>
+
+**场景六：滑块验证连续失败 3 次，IP 封禁 1 分钟** — 验证码连败触发自动封禁，1 分钟后自动解封。
+
+<p align="center">
+  <img src="screenshots/c-captcha-fail.jpg" width="32%" alt="滑块失败"/>
+</p>
+<p align="center"><sub>连败 3 次后触发 IP 封禁 1 分钟。</sub></p>
+
+**场景七：同一设备注销第 2 次，设备拉黑 90 天** — 设备频繁注销触发长期拉黑，90 天内无法注册新号。
+
+<p align="center">
+  <img src="screenshots/c-risk-device-blocked.jpg" width="32%" alt="设备拉黑90天"/>
+</p>
+<p align="center"><sub>设备拉黑 90 天，彻底阻断恶意循环注册。</sub></p>
 
 ### B 端（管理后台）
 
 **安全登录** — Argon2id 密码校验 + RS256 JWT
 
-![](screenshots/b-admin-login.png)
+<p align="center">
+  <img src="screenshots/b-admin-login.png" width="60%" alt="管理后台登录"/>
+</p>
 
 **风控监控大盘** — 实时拦截趋势、用户统计、黑名单数
 
-![](screenshots/b-admin-dashboard.png)
+<p align="center">
+  <img src="screenshots/b-admin-dashboard.png" width="90%" alt="风控大盘"/>
+</p>
 
 **风控规则配置** — 在线调整限流阈值、黑名单天数（修改即时生效，无需重启）
 
-![](screenshots/b-rules-config.png)
+<p align="center">
+  <img src="screenshots/b-rules-config.png" width="90%" alt="规则配置"/>
+</p>
 
 **黑名单管理** — 支持手机号搜索、手动添加、解封
 
-![](screenshots/b-blacklist.png)
+<p align="center">
+  <img src="screenshots/b-blacklist.png" width="90%" alt="黑名单管理"/>
+</p>
 
 **拦截日志** — 每条拦截的 IP、设备哈希、原因、风险等级
 
-![](screenshots/b-intercept-logs.png)
+<p align="center">
+  <img src="screenshots/b-intercept-logs.png" width="90%" alt="拦截日志"/>
+</p>
 
 **白名单管理** — 免检 VIP 通道
 
-![](screenshots/b-whitelist.png)
+<p align="center">
+  <img src="screenshots/b-whitelist.png" width="90%" alt="白名单管理"/>
+</p>
 
-**用户管理** — 透明蓝框显示/隐藏手机号，踢出功能
+**用户管理** — 手机号默认脱敏，点击可解密查看（操作留痕）
 
-![](screenshots/b-users-management.png)
+<p align="center">
+  <img src="screenshots/b-users-management.png" width="90%" alt="用户管理"/>
+</p>
 
 ### 基础设施
 
 **Docker 容器** — 三个服务（backend / redis / mysql）全部运行中
 
-![](screenshots/infra-docker.png)
+<p align="center">
+  <img src="screenshots/infra-docker.png" width="70%" alt="Docker容器"/>
+</p>
 
 **Redis 黑名单 Key** — 缓存中的风控黑名单
 
-![](screenshots/infra-redis.png)
+<p align="center">
+  <img src="screenshots/infra-redis.png" width="70%" alt="Redis黑名单"/>
+</p>
 
 **MySQL 用户表（密文）** — `phone` 列为 AES-256-CBC 密文，非明文
 
-![](screenshots/infra-mysql-users.png)
+<p align="center">
+  <img src="screenshots/infra-mysql-users.png" width="70%" alt="MySQL用户表"/>
+</p>
 
 **MySQL 拦截日志** — 拦截原因、风险等级、时间戳
 
-![](screenshots/infra-mysql-logs.png)
+<p align="center">
+  <img src="screenshots/infra-mysql-logs.png" width="70%" alt="MySQL拦截日志"/>
+</p>
 
 ---
 
