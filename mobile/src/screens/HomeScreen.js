@@ -97,42 +97,42 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea: { flex: 1, backgroundColor: '#171717' },
   container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { fontSize: 15, color: '#94A3B8' },
+  loadingText: { fontSize: 15, color: '#666666' },
 
   header: { alignItems: 'center', marginBottom: 32 },
-  brand: { fontSize: 24, fontWeight: '700', color: '#0F172A', letterSpacing: 0.5, marginBottom: 4 },
-  brandSub: { fontSize: 13, color: '#64748B' },
+  brand: { fontSize: 24, fontWeight: '700', color: '#FAFAFA', letterSpacing: -0.6, marginBottom: 4 },
+  brandSub: { fontSize: 13, color: '#888888' },
 
   card: {
-    borderRadius: 20, borderWidth: 1,
+    borderRadius: 8, borderWidth: 1,
     padding: 24, marginBottom: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 2, elevation: 1,
   },
   badge: {
-    alignSelf: 'flex-start', borderRadius: 8,
+    alignSelf: 'flex-start', borderRadius: 4,
     paddingHorizontal: 12, paddingVertical: 4, marginBottom: 16,
   },
   badgeLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
   subtitle: { fontSize: 14, fontWeight: '500', marginBottom: 24 },
-  divider: { height: 1, backgroundColor: '#E2E8F0', marginBottom: 20 },
+  divider: { height: 1, backgroundColor: '#333333', marginBottom: 20 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  label: { fontSize: 14, color: '#64748B' },
-  value: { fontSize: 14, color: '#0F172A', fontWeight: '600' },
+  label: { fontSize: 14, color: '#888888' },
+  value: { fontSize: 14, color: '#FAFAFA', fontWeight: '600' },
 
   btnOutline: {
-    borderRadius: 14, borderWidth: 1, borderColor: '#CBD5E1',
+    borderRadius: 6, borderWidth: 1, borderColor: '#333333',
     paddingVertical: 14, alignItems: 'center', marginBottom: 12,
   },
-  btnOutlineText: { color: '#475569', fontSize: 15, fontWeight: '600' },
+  btnOutlineText: { color: '#888888', fontSize: 15, fontWeight: '600' },
   btnDanger: {
-    borderRadius: 14, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA',
+    borderRadius: 6, backgroundColor: '#1A1A1A', borderWidth: 1, borderColor: '#5C1A1A',
     paddingVertical: 14, alignItems: 'center',
   },
-  btnDangerText: { color: '#DC2626', fontSize: 15, fontWeight: '600' },
-  footer: { textAlign: 'center', marginTop: 32, fontSize: 12, color: '#94A3B8' },
+  btnDangerText: { color: '#ee0000', fontSize: 15, fontWeight: '600' },
+  footer: { textAlign: 'center', marginTop: 32, fontSize: 12, color: '#666666' },
 })

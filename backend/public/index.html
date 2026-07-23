@@ -3,92 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智能停车风控管理大盘 v3.0</title>
+  <title>智能停车风控管理平台 v3.1</title>
   <link rel="stylesheet" href="/tailwind.css">
   <style>
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#F0F4FA;color:#1F2A44}
     #toast-container{transition:opacity .3s}
-    .nav-item{transition:all .2s}
-    .nav-item:hover{background-color:rgba(59,130,246,.08)}
-    .nav-item.active{background-color:rgba(59,130,246,.12);color:#2563eb;font-weight:600;border-left:3px solid #2563eb}
-    .page-view{display:none}
-    .page-view.active{display:block}
-    .stat-card{transition:transform .2s}
-    .stat-card:hover{transform:translateY(-2px)}
+    .nav-item{transition:all .2s;color:#5A6B89;cursor:pointer}
+    .nav-item:hover{background:rgba(59,111,224,0.06);color:#3B6FE0}
+    .nav-item.active{background:linear-gradient(90deg,rgba(59,111,224,0.1) 0%,rgba(59,111,224,0.02) 100%);color:#3B6FE0;font-weight:600;border-left:3px solid #3B6FE0}
+    .page-view{display:none}.page-view.active{display:block}
+    .stat-card{transition:transform .2s;background:#FFFFFF;border:1px solid #E2E8F4;border-radius:16px;padding:1.5rem;box-shadow:0 1px 2px rgba(31,42,68,0.03)}
+    .stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(59,111,224,0.1)}
     table{width:100%;border-collapse:collapse}
-    th{text-align:left;padding:10px 12px;font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e5e7eb}
-    td{padding:10px 12px;font-size:14px;border-bottom:1px solid #f3f4f6}
-    tr:hover td{background:#f9fafb}
-    .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .2s;background:transparent}
-    .btn-primary{background:transparent;color:#2563eb;border-color:#93c5fd}
-    .btn-primary:hover{background:#eff6ff;border-color:#2563eb}
-    .btn-danger{background:transparent;color:#ef4444;border-color:#fca5a5}
-    .btn-danger:hover{background:#fef2f2;border-color:#ef4444}
-    .btn-sm{padding:4px 10px;font-size:12px}
-    input[type=text],input[type=password],input[type=number],input[type=date],select{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;width:100%;box-sizing:border-box}
-    input:focus,select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-    .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
+    th{text-align:left;padding:12px 14px;font-size:12px;font-weight:600;color:#7B8AA8;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #E2E8F4;background:#F6F9FE}
+    td{padding:12px 14px;font-size:13px;border-bottom:1px solid #F0F4FA;color:#1F2A44}
+    tr:hover td{background:#F6F9FE}
+    .btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #D0DDF2;transition:all .2s;background:#FFFFFF;color:#5A6B89}
+    .btn:hover{color:#3B6FE0;border-color:#3B6FE0}
+    .btn-primary{color:#FFFFFF;background:linear-gradient(135deg,#3B6FE0 0%,#5A8BF0 100%);border-color:transparent;box-shadow:0 2px 6px rgba(59,111,224,0.25)}
+    .btn-primary:hover{box-shadow:0 4px 12px rgba(59,111,224,0.35);color:#FFFFFF}
+    .btn-danger{color:#E0294B;background:#FFFFFF;border-color:#FFD9DF}
+    .btn-danger:hover{background:#FFF1F3;border-color:#E0294B}
+    .btn-sm{padding:4px 12px;font-size:11px}
+    input[type=text],input[type=password],input[type=number],input[type=date],input[type=tel],select{padding:8px 12px;border:1px solid #D0DDF2;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;background:#F6F9FE;color:#1F2A44;transition:all .15s}
+    input:focus,select:focus{outline:none;border-color:#3B6FE0;background:#FFFFFF;box-shadow:0 0 0 3px rgba(59,111,224,0.1)}
+    .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(31,42,68,0.45);z-index:100;justify-content:center;align-items:center;backdrop-filter:blur(2px)}
     .modal-overlay.show{display:flex}
-    .bl-table th{font-size:12px;font-weight:600;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:12px 16px}
-    .bl-table td{padding:14px 16px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
-    .bl-table tr:last-child td{border-bottom:none}
-    .bl-table tr:hover td{background:#f8fafc}
-    /* 🆕 刷新按钮旋转动画 */
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .animate-spin{animation:spin .6s linear infinite;transform-origin:center}
+    .bl-table th{font-size:11px;font-weight:600;color:#7B8AA8;background:#F6F9FE;border-bottom:1px solid #E2E8F4;padding:12px 16px}
+    .bl-table td{padding:14px 16px;border-bottom:1px solid #F0F4FA;vertical-align:middle}
+    .bl-table tr:last-child td{border-bottom:none}.bl-table tr:hover td{background:#F6F9FE}
+    @keyframes spin{to{transform:rotate(360deg)}}.animate-spin{animation:spin .6s linear infinite;transform-origin:center}
+    .badge{padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
+    .badge-success{background:#D4F2E0;color:#0E7C45}.badge-danger{background:#FFD9DF;color:#E0294B}
+    .badge-warning{background:#FFF1D0;color:#8B5A00}.badge-info{background:#DDE7FB;color:#3B6FE0}
+    .badge-muted{background:#F0F4FA;color:#7B8AA8}
+    .panel{border:1px solid #E2E8F4;border-radius:16px;background:#FFFFFF;padding:1.5rem;margin-bottom:1rem;box-shadow:0 1px 2px rgba(31,42,68,0.02)}
+    .panel-title{font-size:12px;font-weight:600;color:#7B8AA8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem}
+    .pager-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #F0F4FA;font-size:12px;color:#7B8AA8;margin-top:8px}
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex">
-<div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2" style="opacity:0;pointer-events:none"></div>
+<body class="min-h-screen flex">
+<div id="toast-container" class="fixed z-50 flex flex-col items-center gap-2" style="opacity:0;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
 
-<!-- ═══ LOGIN ═══ -->
-<div id="login-view" class="w-full min-h-screen flex items-center justify-center">
-  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
-    <div class="text-center mb-8">
-      <h2 class="text-2xl font-bold text-gray-900">智能停车风控系统</h2>
-      <p class="text-sm text-gray-500 mt-2">管理员管控平台 v3.0</p>
+<!-- ====== 登录页 ====== -->
+<div id="login-view" class="w-full min-h-screen flex items-center justify-center" style="background:linear-gradient(135deg,#E8EFF9 0%,#DCE9F8 50%,#E0F2EA 100%)">
+  <div class="p-8 rounded-3xl w-full max-w-md" style="background:#FFFFFF;border:1px solid #E2E8F4;box-shadow:0 20px 50px rgba(31,42,68,0.08)">
+    <div class="mb-8" style="text-align:center">
+      <h2 style="font-size:1.5rem;font-weight:700;color:#1F2A44;letter-spacing:-0.6px">智能停车风控系统</h2>
+      <p style="font-size:.75rem;margin-top:.5rem;color:#7B8AA8">管理员管控平台 v3.1</p>
     </div>
-    <form id="login-form" class="space-y-6">
-      <div><label class="block text-sm font-medium text-gray-700">账号</label>
-        <input type="text" id="username" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="请输入管理员账号"></div>
-      <div><label class="block text-sm font-medium text-gray-700">密码</label>
-        <input type="password" id="password" required class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="请输入密码"></div>
-      <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-medium transition-all">安全登录</button>
+    <form id="login-form" style="display:flex;flex-direction:column;gap:20px">
+      <div><label style="font-size:11px;font-weight:600;color:#7B8AA8;display:block;margin-bottom:5px;text-transform:uppercase">账号</label><input type="text" id="username" required placeholder="请输入管理员账号"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#7B8AA8;display:block;margin-bottom:5px;text-transform:uppercase">密码</label><input type="password" id="password" required placeholder="请输入密码"></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:100px">安全登录</button>
     </form>
   </div>
 </div>
 
-<!-- ═══ MAIN LAYOUT ═══ -->
+<!-- ====== 管理面板 ====== -->
 <div id="dashboard-view" class="hidden w-full min-h-screen flex">
-  <aside class="w-56 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col min-h-screen shadow-sm">
-    <div class="px-4 py-4 border-b border-gray-100 flex items-center gap-3">
-      <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">P</div>
-      <div><p class="font-bold text-gray-900 text-sm">风控管理平台</p><p class="text-xs text-gray-400" id="sidebar-clock">--</p></div>
+  <aside class="w-56 flex-shrink-0 flex flex-col min-h-screen" style="background:#FFFFFF;border-right:1px solid #E2E8F4">
+    <div class="px-4 py-4 flex items-center gap-3" style="border-bottom:1px solid #F0F4FA">
+      <img src="assets/icon.jpg" alt="P" width="32" height="32" class="rounded-lg object-cover" style="box-shadow:0 2px 6px rgba(59,111,224,0.2)" onerror="this.style.display='none'">
+      <div><p class="font-bold text-sm" style="color:#1F2A44">风控管理平台</p><p class="text-xs" style="color:#7B8AA8" id="sidebar-clock">--</p></div>
     </div>
     <nav class="flex-1 px-2 py-3 space-y-1" id="sidebar-nav">
-      <a onclick="switchPage('overview')" data-page="overview" class="nav-item active flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>系统概览</a>
-      <a onclick="switchPage('config')" data-page="config" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>风控规则</a>
-      <a onclick="switchPage('logs')" data-page="logs" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>拦截日志</a>
-      <a onclick="switchPage('blacklist')" data-page="blacklist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>黑名单管理</a>
-      <a onclick="switchPage('whitelist')" data-page="whitelist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>白名单管理</a>
-      <a onclick="switchPage('users')" data-page="users" class="nav-item flex items-center gap-2 px-3 py-2 rounded-md text-sm cursor-pointer">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>用户管理</a>
+      <a onclick="switchPage('overview')" data-page="overview" class="nav-item active flex items-center gap-2 px-3 py-2 rounded-lg text-xs">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>风控监控大盘</a>
+      <a onclick="switchPage('config')" data-page="config" class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-xs"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>风控规则配置</a>
+      <a onclick="switchPage('blacklist')" data-page="blacklist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-xs"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>黑名单管理</a>
+      <a onclick="switchPage('logs')" data-page="logs" class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-xs"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>拦截日志</a>
+      <a onclick="switchPage('whitelist')" data-page="whitelist" class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-xs" id="nav-whitelist"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>白名单管理</a>
+      <a onclick="switchPage('users')" data-page="users" class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-xs"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>用户管理</a>
+      <a onclick="switchPage('admins')" data-page="admins" class="nav-item flex items-center gap-2 px-3 py-2 rounded-lg text-xs" id="nav-admins"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>管理员管理</a>
     </nav>
-    <div class="px-3 py-4 border-t border-gray-100">
-      <p class="text-xs text-gray-400">当前管理员</p>
-      <p class="text-sm font-medium text-gray-700" id="admin-name-display">--</p>
-      <button onclick="doLogout()" class="mt-2 w-full text-left text-xs text-red-500 hover:text-red-700">退出登录</button>
+    <div class="px-3 py-4" style="border-top:1px solid #F0F4FA">
+      <p class="text-xs" style="color:#7B8AA8">当前管理员</p>
+      <p class="text-xs font-medium" style="color:#1F2A44" id="admin-name-display">--</p>
+      <p class="text-xs mt-0.5" style="color:#7B8AA8" id="admin-role-display"></p>
+      <button onclick="doLogout()" class="mt-2 w-full text-left text-xs hover:underline" style="color:#E0294B">退出登录</button>
     </div>
   </aside>
 
   <main class="flex-1 p-6 overflow-auto">
     <!-- Overview Page -->
     <div id="page-overview" class="page-view active">
-      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">系统概览 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadOverview)" title="刷新数据"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
+      <h1 class="text-2xl font-bold mb-6 flex items-center gap-3">风控监控大盘 <button class="btn btn-sm text-gray-400 hover:text-blue-600 inline-flex items-center gap-1" onclick="withSpin(this,loadOverview)" title="刷新数据"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="overview-cards">
         <div class="stat-card bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <p class="text-sm text-gray-500 mb-1">今日拦截量</p>
@@ -277,6 +277,39 @@
         </div>
       </div>
     </div>
+
+    <!-- ====== 管理员管理 ====== -->
+    <div id="page-admins" class="page-view">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <h1 style="font-size:1.5rem;font-weight:700;color:#1F2A44;letter-spacing:-0.6px;margin:0">管理员管理 <button class="btn btn-sm inline-flex items-center gap-1 ml-2" onclick="withSpin(this,loadAdmins)"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>刷新</button></h1>
+        <button class="btn btn-sm inline-flex items-center gap-1" style="color:#0E7C45;border-color:#B6EBC9" onclick="showCreateAdminModal()">+ 新增管理员</button>
+      </div>
+      <div class="panel" style="padding:0;overflow:hidden">
+        <table><thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>最后登录IP</th><th>创建时间</th><th style="text-align:center">操作</th></tr></thead><tbody id="admins-tbody"></tbody></table>
+      </div>
+      <div class="panel" style="margin-top:14px;padding:0;overflow:hidden">
+        <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E2E8F4">
+          <span style="font-size:12px;font-weight:600;color:#7B8AA8;text-transform:uppercase">活跃会话 (JTI)</span>
+          <span style="font-size:11px;color:#7B8AA8" id="sessions-info">--</span>
+        </div>
+        <table><thead><tr><th>管理员</th><th>登录IP</th><th>JTI</th><th>剩余时间</th><th style="text-align:center">操作</th></tr></thead><tbody id="sessions-tbody"></tbody></table>
+        <div class="pager-bar" style="margin:0;padding:12px 20px;border-top:1px solid #F0F4FA" id="sessions-pager">
+          <span id="sessions-page-info">第 1 页 / 共 0 条</span>
+          <div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="sessionsPage(-1)">上一页</button><button class="btn btn-sm" onclick="sessionsPage(1)">下一页</button></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px;padding:0;overflow:hidden">
+        <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E2E8F4">
+          <span style="font-size:12px;font-weight:600;color:#7B8AA8;text-transform:uppercase">管理员操作日志</span>
+          <div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;color:#7B8AA8" id="admin-logs-info">--</span><button class="btn btn-sm" onclick="loadAdminLogs()">刷新</button></div>
+        </div>
+        <table><thead><tr><th>ID</th><th>管理员ID</th><th>操作类型</th><th>操作对象</th><th>IP</th><th>时间</th></tr></thead><tbody id="admin-logs-tbody"></tbody></table>
+        <div class="pager-bar" style="margin:0;padding:12px 20px;border-top:1px solid #F0F4FA" id="admin-logs-pager">
+          <span id="admin-logs-page-info">第 1 页 / 共 0 条</span>
+          <div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="adminLogsPage(-1)">上一页</button><button class="btn btn-sm" onclick="adminLogsPage(1)">下一页</button></div>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -301,9 +334,26 @@
   </div>
 </div>
 
+<!-- 新增管理员弹窗 -->
+<div id="create-admin-modal" class="modal-overlay">
+  <div class="rounded-2xl p-6 w-full max-w-md" style="background:#FFFFFF;box-shadow:0 20px 50px rgba(31,42,68,0.2)">
+    <h3 style="font-size:16px;font-weight:600;color:#1F2A44;margin-bottom:14px">新增管理员</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><label style="font-size:11px;color:#7B8AA8;display:block;margin-bottom:4px">用户名</label><input type="text" id="new-admin-username" placeholder="3-32位字母、数字或下划线"></div>
+      <div><label style="font-size:11px;color:#7B8AA8;display:block;margin-bottom:4px">密码</label><input type="password" id="new-admin-password" placeholder="至少6位"></div>
+      <div><label style="font-size:11px;color:#7B8AA8;display:block;margin-bottom:4px">角色</label><select id="new-admin-role"><option value="admin">普通管理员</option><option value="super_admin">超级管理员</option></select></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn btn-sm" onclick="closeCreateAdminModal()">取消</button>
+      <button class="btn btn-primary btn-sm" onclick="doCreateAdmin()">创建</button>
+    </div>
+  </div>
+</div>
+
 <script>
-let currentPage='overview', logCurPage=1, blCurPage=1;
+let currentPage='overview', logCurPage=1, blCurPage=1, adminRole='admin';
 let usersCurPage=1, usersRevealed={};
+let sessionsCurPage=1, adminLogsCurPage=1;
 const api=(url,opts={})=>fetch(location.origin+'/api/v1/admin'+url,{headers:{'Content-Type':'application/json'},...opts}).then(r=>r.json());
 
 function toast(msg,ok=true){
@@ -342,13 +392,23 @@ function switchPage(p){
   if(p==='overview')loadOverview();if(p==='config')loadConfig();if(p==='logs')loadLogs();
   if(p==='blacklist')loadBlacklist();if(p==='whitelist')loadWhitelist();
   if(p==='users')loadUsers(1);
+  if(p==='admins'){loadAdmins();loadAdminSessions();loadAdminLogs();}
 }
 
 // ── Login / Logout ──
+function updateNavVisibility(){
+  var w=document.getElementById('nav-whitelist');
+  var a=document.getElementById('nav-admins');
+  if(adminRole==='super_admin'){if(w)w.style.display='';if(a)a.style.display=''}
+  else{if(w)w.style.display='none';if(a)a.style.display='none'}
+}
 document.getElementById('login-form').onsubmit=async e=>{e.preventDefault();
   const r=await api('/login',{method:'POST',body:JSON.stringify({username:username.value,password:password.value})});
   if(r.code===20000){document.getElementById('login-view').classList.add('hidden');document.getElementById('dashboard-view').classList.remove('hidden');
-    document.getElementById('admin-name-display').textContent=r.data.username;loadOverview();toast('登录成功');
+    document.getElementById('admin-name-display').textContent=r.data.username;
+    adminRole=r.data.role||'admin';
+    document.getElementById('admin-role-display').textContent=adminRole==='super_admin'?'超级管理员':'普通管理员';
+    updateNavVisibility();loadOverview();toast('登录成功');
   }else{toast(r.message||'登录失败',false)}
 };
 
@@ -440,7 +500,7 @@ async function loadConfig(){
     <td class="font-mono text-sm">${k}</td>
     <td><input type="number" id="cfg-${k}" value="${v}" class="w-24 text-sm" min="0"></td>
     <td class="text-sm text-gray-500">${CONFIG_LABELS[k]||k}</td>
-    <td><button class="btn btn-primary btn-sm" onclick="updateConfig('${k}')">保存</button></td></tr>`).join('');
+    <td style="text-align:center;vertical-align:middle"><button class="btn btn-sm" style="background:#FFFFFF;color:#3B6FE0;border:1px solid #D0DDF2;font-weight:500;padding:6px 14px;border-radius:6px" onmouseover="this.style.borderColor='#3B6FE0';this.style.background='rgba(59,111,224,0.04)'" onmouseout="this.style.borderColor='#D0DDF2';this.style.background='#FFFFFF'" onclick="updateConfig('${k}')">保存</button></td></tr>`).join('');
   }catch(e){toast('刷新失败: 网络错误',false)}
 }
 
@@ -843,7 +903,50 @@ function usersPage(d){
   loadUsers(usersCurPage);
 }
 
+// ═══ 管理员管理 ═══
+async function loadAdmins(){
+  try{const r=await api('/admins');if(r.code!==20000){toast(r.message||'加载失败',false);return;}
+    document.getElementById('admins-tbody').innerHTML=(r.data.list||[]).map(a=>'<tr><td style="font-size:11px">'+a.id+'</td><td style="font-weight:500">'+a.username+'</td><td><span class="'+(a.role==='super_admin'?'badge badge-info':'badge badge-muted')+'">'+(a.role==='super_admin'?'超级管理员':'普通管理员')+'</span></td><td><span class="'+(a.status===1?'badge badge-success':'badge badge-danger')+'">'+(a.status===1?'正常':'已禁用')+'</span></td><td style="font-family:monospace;font-size:11px">'+(a.last_login_ip||'--')+'</td><td style="font-size:11px;color:#7B8AA8">'+fmtLogTime(a.created_at)+'</td><td style="text-align:center"><button class="btn btn-sm" style="color:#E08600;border-color:#FFE3A8" onclick="editAdmin('+a.id+',\''+a.role+'\','+a.status+')">编辑</button> <button class="btn btn-danger btn-sm" onclick="deleteAdmin('+a.id+',\''+a.username+'\')">删除</button></td></tr>').join('');
+  }catch(e){toast('加载失败',false)}
+}
+function editAdmin(id,role,status){
+  var nr=prompt('修改角色(super_admin/admin):',role);
+  if(!nr||!['super_admin','admin'].includes(nr))return;
+  var ns=prompt('状态(1=正常,0=禁用):',String(status));if(ns===null)return;ns=parseInt(ns);
+  if(![0,1].includes(ns))return toast('无效状态',false);
+  api('/admins/'+id,{method:'PUT',body:JSON.stringify({role:nr,status:ns})}).then(r=>{toast(r.message,r.code===20000);if(r.code===20000)loadAdmins();});
+}
+async function deleteAdmin(id,username){if(!confirm('确定删除"'+username+'"？'))return;const r=await api('/admins/'+id,{method:'DELETE'});toast(r.message,r.code===20000);if(r.code===20000)loadAdmins();}
+function showCreateAdminModal(){document.getElementById('new-admin-username').value='';document.getElementById('new-admin-password').value='';document.getElementById('new-admin-role').value='admin';document.getElementById('create-admin-modal').classList.add('show')}
+function closeCreateAdminModal(){document.getElementById('create-admin-modal').classList.remove('show')}
+async function doCreateAdmin(){const u=document.getElementById('new-admin-username').value.trim(),p=document.getElementById('new-admin-password').value,r=document.getElementById('new-admin-role').value;if(!u||!p)return toast('不可为空',false);const resp=await api('/admins',{method:'POST',body:JSON.stringify({username:u,password:p,role:r})});toast(resp.message,resp.code===20000);if(resp.code===20000){closeCreateAdminModal();loadAdmins();}}
 
+const SP8=8;
+async function loadAdminSessions(){
+  try{const r=await api('/admins/sessions');if(r.code!==20000){document.getElementById('sessions-tbody').innerHTML='<tr><td colspan="5" style="text-align:center;color:#7B8AA8;padding:20px">加载失败</td></tr>';return;}
+    const all=r.data.sessions||[],tp=Math.max(1,Math.ceil(all.length/SP8));
+    if(sessionsCurPage>tp)sessionsCurPage=tp;
+    const p=all.slice((sessionsCurPage-1)*SP8,sessionsCurPage*SP8);
+    document.getElementById('sessions-tbody').innerHTML=all.length?p.map(s=>{var ttl=s.ttlSeconds>0?Math.floor(s.ttlSeconds/60)+'分'+s.ttlSeconds%60+'秒':'即将过期';return'<tr><td style="font-weight:500">'+s.username+'</td><td style="font-family:monospace;font-size:11px">'+s.loginIp+'</td><td style="font-family:monospace;font-size:10px">'+s.jti.slice(0,16)+'...</td><td style="font-size:11px">'+ttl+'</td><td style="text-align:center"><button class="btn btn-danger btn-sm" onclick="revokeSession(\''+s.jti+'\',\''+s.username+'\')">强制下线</button></td></tr>'}).join(''):'<tr><td colspan="5" style="text-align:center;color:#7B8AA8;padding:20px">暂无活跃会话</td></tr>';
+    document.getElementById('sessions-info').textContent='共 '+all.length+' 个';
+    document.getElementById('sessions-page-info').textContent='第 '+sessionsCurPage+' 页 / 共 '+all.length+' 条';
+    document.getElementById('sessions-pager').querySelectorAll('button').forEach((b,i)=>{b.disabled=(i===0&&sessionsCurPage<=1)||(i===1&&sessionsCurPage>=tp)});
+  }catch(e){document.getElementById('sessions-tbody').innerHTML='<tr><td colspan="5" style="text-align:center;color:#7B8AA8;padding:20px">加载失败</td></tr>';}
+}
+function sessionsPage(d){sessionsCurPage=Math.max(1,sessionsCurPage+d);loadAdminSessions();}
+async function revokeSession(jti,username){if(!confirm('确定强制下线"'+username+'"？'))return;const r=await api('/auth/revoke',{method:'POST',body:JSON.stringify({targetJti:jti,expireAt:Math.floor(Date.now()/1000)+7200})});toast(r.message,r.code===20000);if(r.code===20000)loadAdminSessions();}
+
+const LP10=10;
+async function loadAdminLogs(){
+  try{const r=await api('/operation-logs?page='+adminLogsCurPage+'&pageSize='+LP10);if(r.code!==20000){document.getElementById('admin-logs-tbody').innerHTML='<tr><td colspan="6" style="text-align:center;color:#7B8AA8;padding:20px">加载失败</td></tr>';return;}
+    const list=r.data.list||[],total=r.data.total||0,tp=Math.max(1,Math.ceil(total/LP10));
+    document.getElementById('admin-logs-tbody').innerHTML=list.length?list.map(l=>'<tr><td style="font-size:11px">'+l.id+'</td><td style="font-size:11px">'+l.admin_id+'</td><td style="font-weight:550;font-size:11px">'+l.action_type+'</td><td style="font-size:11px">'+l.target_resource+'</td><td style="font-family:monospace;font-size:10px">'+l.ip_address+'</td><td style="font-size:10px;color:#7B8AA8">'+fmtLogTime(l.created_at)+'</td></tr>').join(''):'<tr><td colspan="6" style="text-align:center;color:#7B8AA8;padding:20px">暂无操作日志</td></tr>';
+    document.getElementById('admin-logs-info').textContent='共 '+total+' 条';
+    document.getElementById('admin-logs-page-info').textContent='第 '+adminLogsCurPage+' 页 / 共 '+total+' 条';
+    document.getElementById('admin-logs-pager').querySelectorAll('button').forEach((b,i)=>{b.disabled=(i===0&&adminLogsCurPage<=1)||(i===1&&adminLogsCurPage>=tp)});
+  }catch(e){}
+}
+function adminLogsPage(d){adminLogsCurPage=Math.max(1,adminLogsCurPage+d);loadAdminLogs();}
 
 // Real-time clock
 function updateClock(){
@@ -860,6 +963,8 @@ document.addEventListener("DOMContentLoaded",async function(){
     document.getElementById("login-view").classList.add("hidden");
     document.getElementById("dashboard-view").classList.remove("hidden");
     document.getElementById("admin-name-display").textContent="admin";
+    adminRole='admin';
+    updateNavVisibility();
     loadOverview();
   }else{document.getElementById("login-view").classList.remove("hidden");}
 });

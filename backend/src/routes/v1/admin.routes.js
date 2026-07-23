@@ -8,6 +8,7 @@ const configController = require('../../controllers/config.controller');
 const rateLimiter = require('../../middlewares/rateLimiter');
 const jwtAuth = require('../../middlewares/jwtAuth');
 const redisBlacklist = require('../../middlewares/redisBlacklist');
+const superAdminOnly = require('../../middlewares/superAdminOnly');
 
 // 实例化管理员全局防抖限流器 (单IP 30次/分钟)
 const adminIpLimiter = rateLimiter('admin_ip');
@@ -23,10 +24,10 @@ router.post('/login/token', adminIpLimiter, async (req, res, next) => {
       return fail(res, 400, 40000, '账号或密码不可为空');
     }
     const authService = require('../../services/auth.service');
-    const { token, adminId, username: adminName } = await authService.login(username, password);
+    const { token, adminId, username: adminName, role } = await authService.login(username, password, req.ip);
     res.cookie('admin_token', token, { httpOnly: true, sameSite: 'strict', maxAge: 2*60*60*1000, path: '/' });
     const { success } = require('../../utils/response');
-    return success(res, { adminId, username: adminName, token }, '登录成功');
+    return success(res, { adminId, username: adminName, role, token }, '登录成功');
   } catch (err) { next(err); }
 });
 
@@ -43,17 +44,17 @@ router.post('/risk/unban',             adminIpLimiter, adminController.unbanRisk
 router.post('/user/force-delete',      adminIpLimiter, adminController.forceDeleteUser);
 router.post('/intercept-logs/flush',  adminIpLimiter, adminController.forceFlushInterceptLogs);
 router.post('/intercept-logs/clear',  adminIpLimiter, adminController.clearInterceptLogs);
-router.post('/whitelist/add',         adminIpLimiter, adminController.addToWhitelist);
-router.post('/whitelist/remove',      adminIpLimiter, adminController.removeFromWhitelist);
-router.post('/whitelist/add-by-phone', adminIpLimiter, adminController.addToWhitelistByPhone);
+router.post('/whitelist/add',         adminIpLimiter, superAdminOnly, adminController.addToWhitelist);
+router.post('/whitelist/remove',      adminIpLimiter, superAdminOnly, adminController.removeFromWhitelist);
+router.post('/whitelist/add-by-phone', adminIpLimiter, superAdminOnly, adminController.addToWhitelistByPhone);
 router.post('/risk/clear-ip-bl',      adminIpLimiter, adminController.clearIpBlacklist);
-router.put('/config',                 adminIpLimiter, configController.update);
+router.put('/config',                 adminIpLimiter, superAdminOnly, configController.update);
 router.post('/blacklist/add',         adminIpLimiter, adminController.addBlacklist);
 router.post('/blacklist/remove',      adminIpLimiter, adminController.removeBlacklist);
 router.post('/blacklist/unban-phone',    adminIpLimiter, adminController.unbanByPhone);
 router.post('/blacklist/unban-hash',     adminIpLimiter, adminController.unbanByPhoneHash);
-router.post('/users/kick',             adminIpLimiter, adminController.kickUser);
-router.post('/users/decrypt-phones',   adminIpLimiter, adminController.decryptPhones);
+router.post('/users/kick',             adminIpLimiter, superAdminOnly, adminController.kickUser);
+router.post('/users/decrypt-phones',   adminIpLimiter, superAdminOnly, adminController.decryptPhones);
 
 // 只读操作（无 adminIpLimiter，减轻 Redis 压力）
 router.get('/dashboard',              adminController.getDashboard);
@@ -65,6 +66,13 @@ router.get('/blacklist',              adminController.getBlacklist);
 router.get('/operation-logs',         adminController.getOperationLogs);
 router.get('/blacklist/search-phone',    adminController.searchBlacklistByPhone);
 router.get('/users',                   adminController.getUsers);
-router.get('/users/phone/:id',         adminController.getUserPhone);
+router.get('/users/phone/:id',         superAdminOnly, adminController.getUserPhone);
+
+// ═══ 管理员管理 (super_admin only) ═══
+router.get('/admins',                  adminController.getAdmins);
+router.post('/admins',                 adminIpLimiter, adminController.createAdmin);
+router.put('/admins/:id',              adminIpLimiter, adminController.updateAdmin);
+router.delete('/admins/:id',           adminIpLimiter, adminController.deleteAdmin);
+router.get('/admins/sessions',         adminController.getAdminSessions);
 
 module.exports = router;

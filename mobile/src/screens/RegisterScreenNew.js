@@ -69,14 +69,14 @@ export default function RegisterScreenNew() {
     })
     navigate('HomeScreen')
     if (!isExisting) {
-      Alert.alert('🎉 注册成功', '停车券已发放到您的账户')
+      Alert.alert('Registration Complete', 'Parking coupon issued to your account')
     }
   }
 
   // ── 注册按钮点击 ──────────────────────────────────────
   const handleRegister = async () => {
     if (!phone || !name) {
-      Alert.alert('提示', '请输入手机号和姓名')
+      Alert.alert('Required', 'Please enter phone number and name')
       return
     }
 
@@ -101,9 +101,9 @@ export default function RegisterScreenNew() {
       } else if (isRiskBlock) {
         console.log('[RegisterNew] 风控拦截, code:', errCode)
       } else if (errCode === 40029 || err.response?.status === 429) {
-        Alert.alert('提示', '操作过于频繁，请稍后再试')
+        Alert.alert('Rate Limited', 'Too many attempts. Please wait.')
       } else {
-        Alert.alert('错误', errMsg || '注册失败，请重试')
+        Alert.alert('Error', errMsg || 'Registration failed. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -130,12 +130,12 @@ export default function RegisterScreenNew() {
       }
 
       if (errCode === 40111) {
-        Alert.alert('提示', '验证凭证已失效，请重新验证')
+        Alert.alert('Expired', 'Verification token expired. Please try again.')
         setShowCaptcha(true)
       } else if (errCode === 40300 || errCode === 40301 || errCode === 40302) {
-        console.log('[RegisterNew] 风控拦截, code:', errCode)
+        console.log('[RegisterNew] Risk blocked, code:', errCode)
       } else {
-        Alert.alert('错误', errMsg || '注册失败')
+        Alert.alert('Error', errMsg || 'Registration failed')
       }
     } finally {
       setLoading(false)
@@ -171,9 +171,9 @@ export default function RegisterScreenNew() {
   // ── Main Render ─────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F0F9FF" />
+      <StatusBar barStyle="light-content" backgroundColor="#171717" />
       <LinearGradient
-        colors={['#F0F9FF', '#E0F2FE', '#F8FAFC']}
+        colors={['#171717', '#171717', '#171717']}
         style={styles.gradientBg}
       >
         <KeyboardAvoidingView
@@ -268,9 +268,9 @@ export default function RegisterScreenNew() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>🔐 安全验证</Text>
+            <Text style={styles.modalTitle}>Security Verification</Text>
             <Text style={styles.modalSubtitle}>
-              检测到异常注册频率，请完成滑动拼图验证
+              Suspicious activity detected. Complete the slider puzzle.
             </Text>
 
             <SliderCaptcha
@@ -287,7 +287,7 @@ export default function RegisterScreenNew() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#171717',
   },
   gradientBg: {
     flex: 1,
@@ -308,46 +308,48 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   logoIcon: {
-    width: 88,
-    height: 88,
-    borderRadius: 26,
+    width: 64,
+    height: 64,
+    borderRadius: 8,
     marginBottom: 16,
   },
   brandName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0F172A',
-    letterSpacing: 1,
+    color: '#FAFAFA',
+    letterSpacing: -0.6,
     marginBottom: 4,
   },
   brandTagline: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#888888',
     fontWeight: '400',
   },
 
   // ── Card ──
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
     paddingHorizontal: 22,
     paddingVertical: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   cardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#FAFAFA',
     textAlign: 'center',
     marginBottom: 4,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#94A3B8',
+    color: '#888888',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -357,26 +359,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#334155',
+    color: '#888888',
     marginBottom: 6,
     paddingLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
+    backgroundColor: '#222222',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 6,
     paddingHorizontal: 14,
     height: 50,
   },
   inputField: {
     flex: 1,
     fontSize: 16,
-    color: '#0F172A',
+    color: '#FAFAFA',
     paddingVertical: 0,
     marginLeft: 10,
   },
@@ -393,13 +397,13 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 3,
     borderWidth: 2,
-    borderColor: '#94A3B8',
+    borderColor: '#666666',
   },
   phoneIconNotch: {
     width: 6,
     height: 2,
     borderRadius: 1,
-    backgroundColor: '#94A3B8',
+    backgroundColor: '#666666',
     position: 'absolute',
     bottom: 2,
   },
@@ -408,7 +412,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#94A3B8',
+    borderColor: '#666666',
     position: 'absolute',
     top: 2,
   },
@@ -418,7 +422,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     borderWidth: 2,
-    borderColor: '#94A3B8',
+    borderColor: '#666666',
     borderBottomWidth: 0,
     position: 'absolute',
     bottom: 2,
@@ -426,18 +430,12 @@ const styles = StyleSheet.create({
 
   // ── Button ──
   submitBtn: {
-    borderRadius: 14,
+    borderRadius: 100,
     overflow: 'hidden',
     marginTop: 8,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 6,
   },
   submitBtnDisabled: {
-    shadowOpacity: 0.1,
-    elevation: 1,
+    opacity: 0.6,
   },
   submitBtnGradient: {
     height: 50,
@@ -471,7 +469,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 16,
     borderWidth: 1.5,
-    borderColor: '#10B981',
+    borderColor: '#50e3c2',
     borderRadius: 2,
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
@@ -482,44 +480,41 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
+    backgroundColor: '#50e3c2',
     marginTop: -2,
   },
   trustText: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#666666',
   },
 
   // ── Modal ──
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
     padding: 20,
     width: '100%',
     maxWidth: 360,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 10,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: '700',
+    color: '#FAFAFA',
     marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#888888',
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -528,7 +523,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   modalCloseText: {
-    color: '#9ca3af',
+    color: '#666666',
     fontSize: 14,
   },
 })

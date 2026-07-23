@@ -51,6 +51,7 @@ const env = {
 
   // 安全与风控参数
   JWT_EXPIRES_IN: str('JWT_EXPIRES_IN', '2h'),
+  JWT_EXPIRES_IN_SEC: parseInt(process.env.JWT_EXPIRES_IN_SEC, 10) || 7200,
   KEYS_DIR: str('KEYS_DIR') || path.join(__dirname, '../../.keys'),
 };
 

@@ -5,33 +5,29 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="format-detection" content="telephone=no">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#6366f1">
+  <meta name="theme-color" content="#3B6FE0">
   <title>停小券 - 免费停车券领取</title>
-  <!-- ⚡ 异步加载 Tailwind CSS，不阻塞首帧渲染 -->
   <link rel="preload" href="/tailwind.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="/tailwind.css"></noscript>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html{height:100%}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 50%,#ede9fe 100%);min-height:100vh;min-height:100dvh;min-height:-webkit-fill-available;display:flex;align-items:center;justify-content:center}
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(135deg,#E8EFF9 0%,#DCE9F8 50%,#E0F2EA 100%);min-height:100vh;min-height:100dvh;min-height:-webkit-fill-available;display:flex;align-items:center;justify-content:center;color:#1F2A44}
     input{outline:none}.page{display:none}.page.active{display:block}
-    /* 关键：不依赖 Tailwind CSS 的 hidden，防止 CSS 未加载时 loading 遮罩导致白屏 */
     #loading,.hidden-until-css{display:none}
-    .slide-track{position:relative;height:48px;background:#e5e7eb;border-radius:24px;overflow:hidden;touch-action:none}
-    .slide-progress{position:absolute;left:0;top:0;height:100%;background:rgba(99,102,241,0.25);border-radius:24px;width:0%;transition:width 0.05s}
-    .slide-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;font-weight:500}
-    .slide-thumb{position:absolute;left:0;top:0;width:48px;height:48px;background:#6366f1;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;z-index:2;cursor:grab;user-select:none}
+    /* 滑块验证码 — 与 logo 配色 */
+    .slide-track{position:relative;height:48px;background:#E8EFF9;border-radius:100px;overflow:hidden;touch-action:none;border:1px solid #D0DDF2}
+    .slide-progress{position:absolute;left:0;top:0;height:100%;background:rgba(59,111,224,0.18);border-radius:100px;width:0%;transition:width 0.05s}
+    .slide-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7B8AA8;font-size:12px;font-weight:500;letter-spacing:0.2px}
+    .slide-thumb{position:absolute;left:0;top:0;width:48px;height:48px;background:linear-gradient(135deg,#3B6FE0 0%,#5A8BF0 100%);border-radius:50%;box-shadow:0 4px 12px rgba(59,111,224,0.35);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;z-index:2;cursor:grab;user-select:none}
     .slide-thumb:active{cursor:grabbing}
-    /* 拼图验证码：宽度由后端 CANVAS_WIDTH 决定，260=13×20cell 整除无边界漏白 */
-    .captcha-canvas{position:relative;width:280px;height:150px;background:#94a3b8;border-radius:8px;overflow:hidden;outline:1px solid #e5e7eb;box-sizing:content-box;margin:0 auto}
+    .captcha-canvas{position:relative;width:280px;height:150px;background:#2A2A2A;border-radius:12px;overflow:hidden;outline:1px solid #D0DDF2;box-sizing:content-box;margin:0 auto}
     .captcha-canvas svg{width:100%;height:100%;display:block}
-    .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;box-shadow:0 2px 6px rgba(0,0,0,0.35);z-index:10}
+    .captcha-piece{position:absolute;left:0;top:0;width:50px;height:50px;cursor:grab;user-select:none;touch-action:none;box-shadow:0 2px 8px rgba(0,0,0,0.4);z-index:10}
     .captcha-piece:active{cursor:grabbing}
     .captcha-piece svg{width:100%;height:100%;display:block}
     /* ══════════════════════════════════════════
        🔑 关键 CSS 骨架 — Tailwind 未加载时的首屏渲染
-       覆盖 register/home/cancel/blocked 所有页面的布局核心类
-       文件大小 < 5KB，手机 3G 网络也能瞬间渲染
        ══════════════════════════════════════════ */
     /* -- layout -- */
     .w-full{width:100%}.max-w-sm{max-width:24rem}.relative{position:relative}.fixed{position:fixed}
@@ -46,7 +42,7 @@
     .pl-4{padding-left:1rem}.pr-2{padding-right:.5rem}.pr-4{padding-right:1rem}
     .py-1{padding-top:.25rem;padding-bottom:.25rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}
     .py-3{padding-top:.75rem;padding-bottom:.75rem}
-    .py-3\.5,.py-3{padding-top:.875rem;padding-bottom:.875rem}.py-4{padding-top:1rem;padding-bottom:1rem}
+    .py-3\.5{padding-top:.875rem;padding-bottom:.875rem}.py-4{padding-top:1rem;padding-bottom:1rem}
     .pt-4{padding-top:1rem}.pt-5{padding-top:1.25rem}
     .mb-1{margin-bottom:.25rem}.mb-1\.5{margin-bottom:.375rem}.mb-2{margin-bottom:.5rem}
     .mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}
@@ -61,178 +57,149 @@
     .text-3xl{font-size:1.875rem;line-height:2.25rem}
     .font-bold{font-weight:700}.font-semibold{font-weight:600}.font-extrabold{font-weight:800}.font-medium{font-weight:500}
     .text-center{text-align:center}.uppercase{text-transform:uppercase}.leading-relaxed{line-height:1.625}
-    /* -- colors: text -- */
-    .text-gray-900{color:#111827}.text-gray-800{color:#1f2937}.text-gray-700{color:#374151}
-    .text-gray-600{color:#4b5563}.text-gray-500{color:#6b7280}.text-gray-400{color:#9ca3af}
-    .text-white{color:#fff}.text-red-500{color:#ef4444}.text-red-600{color:#dc2626}.text-red-800{color:#991b1b}
-    .text-green-500{color:#22c55e}.text-green-600{color:#16a34a}
-    .text-amber-700{color:#b45309}.text-amber-800{color:#92400e}.text-amber-600{color:#d97706}
-    .text-blue-500{color:#3b82f6}.text-blue-600{color:#2563eb}
-    /* -- colors: bg -- */
-    .bg-white{background-color:#fff}.bg-gray-50{background-color:#f9fafb}.bg-transparent{background-color:transparent}
-    .bg-red-50{background-color:#fef2f2}.bg-red-600{background-color:#dc2626}
-    .bg-amber-50{background-color:#fffbeb}.bg-green-50{background-color:#f0fdf4}
-    .bg-blue-50{background-color:#eff6ff}.bg-blue-600{background-color:#2563eb}
-    .bg-black\/50{background-color:rgba(0,0,0,.5)}
-    .bg-gradient-to-r{background-image:linear-gradient(to right,#3b82f6,#4f46e5)}
-    /* -- borders -- */
-    .border{border:1px solid #e5e7eb}.border-2{border-width:2px}
-    .border-t{border-top:1px solid #e5e7eb}
-    .border-gray-100{border-color:#f3f4f6}.border-gray-200{border-color:#e5e7eb}
-    .border-gray-300{border-color:#d1d5db}.border-gray-400{border-color:#9ca3af}
-    .border-red-200{border-color:#fecaca}.border-red-300{border-color:#fca5a5}
-    .border-amber-200{border-color:#fde68a}.border-green-200{border-color:#bbf7d0}
-    .border-blue-200{border-color:#bfdbfe}.border-blue-500{border-color:#3b82f6}
-    .border-t-blue-500{border-top-color:#3b82f6}
-    /* -- rounded -- */
-    .rounded-full{border-radius:9999px}.rounded-3xl{border-radius:1.5rem}
-    .rounded-2xl{border-radius:1rem}.rounded-xl{border-radius:.75rem}.rounded-lg{border-radius:.5rem}
-    /* -- shadows -- */
-    .shadow-lg{box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1)}
-    .shadow-blue-200{--tw-shadow-color:#bfdbfe}
-    .shadow-blue-100\/50{--tw-shadow-color:rgba(219,234,254,.5)}
-    /* -- sizing -- */
-    .w-3\.5{width:.875rem}.h-3\.5{height:.875rem}
-    .w-5{width:1.25rem}.h-5{height:1.25rem}
-    .w-8{width:2rem}.h-8{height:2rem}
-    .w-16{width:4rem}.h-16{height:4rem}
-    .w-20{width:5rem}.h-20{height:5rem}
-    .object-cover{object-fit:cover}
-    /* -- transitions & effects -- */
+    .text-white{color:#fff}
+    .border{border:1px solid #D0DDF2}.border-2{border-width:2px}
+    .border-t{border-top:1px solid #E2E8F4}
+    .rounded-full{border-radius:9999px}.rounded-2xl{border-radius:1rem}
+    .rounded-xl{border-radius:.75rem}.rounded-lg{border-radius:.5rem}
     .transition-all{transition-property:all;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}
     .active\:scale-\[0\.98\]:active{transform:scale(.98)}
     @keyframes spin{to{transform:rotate(360deg)}}
     .animate-spin{animation:spin 1s linear infinite}
     .z-10{z-index:10}.z-50{z-index:50}
     .pointer-events-none{pointer-events:none}
-    .cursor-pointer{cursor:pointer}
+    .w-3\.5{width:.875rem}.h-3\.5{height:.875rem}
+    .w-5{width:1.25rem}.h-5{height:1.25rem}
+    .w-8{width:2rem}.h-8{height:2rem}
+    .w-16{width:4rem}.h-16{height:4rem}
+    .w-20{width:5rem}.h-20{height:5rem}
+    .object-cover{object-fit:cover}
   </style>
 </head>
 <body class="p-5">
   <div class="w-full max-w-sm relative">
 
-    <!-- Logo (shared) -->
+    <!-- Logo -->
     <div id="logo" class="text-center mb-8">
-      <img src="assets/icon.jpg" alt="停小券" width="80" height="80" loading="lazy" decoding="async" class="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-lg shadow-blue-200 object-cover" onerror="this.style.display='none'">
-      <h1 id="logo-title" class="text-2xl font-extrabold text-gray-900">停小券</h1>
-      <p id="logo-sub" class="text-sm text-gray-500 mt-1">免费停车券 · 一键领取</p>
+      <img src="assets/icon.jpg" alt="停小券" width="72" height="72" loading="lazy" decoding="async" class="w-18 h-18 rounded-2xl mx-auto mb-4 object-cover" style="width:72px;height:72px;box-shadow:0 8px 24px rgba(59,111,224,0.25),0 2px 4px rgba(0,0,0,0.06)" onerror="this.style.display='none'">
+      <h1 id="logo-title" class="text-2xl font-extrabold" style="color:#1F2A44;letter-spacing:-0.6px">停小券</h1>
+      <p id="logo-sub" class="text-sm mt-1" style="color:#7B8AA8">免费停车券 · 一键领取</p>
     </div>
 
-    <!-- ═══ Card ═══ -->
-    <div class="bg-white rounded-3xl p-6 shadow-lg shadow-blue-100/50 relative">
+    <!-- Card -->
+    <div style="background:#FFFFFF;border-radius:20px;padding:1.75rem;border:1px solid #E2E8F4;box-shadow:0 1px 2px rgba(31,42,68,0.04),0 8px 24px rgba(59,111,224,0.08)">
 
-      <!-- ====== PAGE 1: Register ====== -->
+      <!-- ====== 注册 ====== -->
       <div id="page-register" class="page active">
         <div class="mb-5">
-          <label class="block text-xs font-semibold text-gray-600 mb-1.5">手机号码</label>
-          <div class="flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
-            <span class="pl-4 pr-2 text-gray-400 text-sm font-bold">+86</span>
-            <input type="tel" id="phone" maxlength="11" placeholder="输入11位手机号" class="flex-1 py-3.5 pr-4 bg-transparent text-base" inputmode="numeric">
+          <label class="block text-xs font-semibold mb-1.5" style="color:#7B8AA8;letter-spacing:0.05em">手机号码</label>
+          <div class="flex items-center rounded-xl border focus-within:border-[#3B6FE0] focus-within:shadow-[0_0_0_3px_rgba(59,111,224,0.1)] transition-all" style="background:#F6F9FE;border-color:#D0DDF2">
+            <span class="pl-4 pr-2 text-sm font-bold" style="color:#3B6FE0">+86</span>
+            <input type="tel" id="phone" maxlength="11" placeholder="输入11位手机号" class="flex-1 py-3.5 pr-4 bg-transparent text-base" style="color:#1F2A44" inputmode="numeric">
           </div>
         </div>
         <div class="mb-6">
-          <label class="block text-xs font-semibold text-gray-600 mb-1.5">真实姓名</label>
-          <div class="flex items-center bg-gray-50 rounded-xl border border-gray-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all">
-            <span class="pl-4 pr-2 text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></span>
-            <input type="text" id="name" placeholder="输入真实姓名" class="flex-1 py-3.5 pr-4 bg-transparent text-base">
+          <label class="block text-xs font-semibold mb-1.5" style="color:#7B8AA8;letter-spacing:0.05em">真实姓名</label>
+          <div class="flex items-center rounded-xl border focus-within:border-[#3B6FE0] focus-within:shadow-[0_0_0_3px_rgba(59,111,224,0.1)] transition-all" style="background:#F6F9FE;border-color:#D0DDF2">
+            <span class="pl-4 pr-2" style="color:#7B8AA8"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></span>
+            <input type="text" id="name" placeholder="输入真实姓名" class="flex-1 py-3.5 pr-4 bg-transparent text-base" style="color:#1F2A44">
           </div>
         </div>
-        <button id="register-btn" onclick="handleRegister()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all">注册领券</button>
-        <p id="register-error" class="text-center text-red-500 text-xs mt-3" style="display:none"></p>
+        <div class="flex gap-3">
+          <button id="login-btn" onclick="goHome()" class="flex-1 py-3.5 rounded-xl font-semibold text-sm transition-all" style="background:#FFFFFF;color:#3B6FE0;border:1px solid #D0DDF2">直接登陆</button>
+          <button id="register-btn" onclick="handleRegister()" class="flex-1 py-3.5 rounded-xl font-semibold text-sm active:scale-[0.98] transition-all" style="background:linear-gradient(135deg,#3B6FE0 0%,#5A8BF0 100%);color:#FFFFFF;box-shadow:0 4px 12px rgba(59,111,224,0.3)">注册领券</button>
+        </div>
+        <p id="register-error" class="text-center text-xs mt-3" style="color:#E0294B;display:none"></p>
       </div>
 
-      <!-- ====== PAGE 2: Captcha ====== -->
+      <!-- ====== 滑块验证 (yeild/jigsaw) ====== -->
       <div id="page-captcha" class="page text-center py-2">
-        <p class="text-amber-600 font-semibold text-sm mb-2">⚠️ 检测到异常注册频率</p>
-        <p class="text-gray-400 text-xs mb-2">请完成滑动拼图验证</p>
-        <div class="rounded-xl p-2 mb-2 border border-gray-200" style="position:relative">          <div id="captcha-canvas" class="captcha-canvas"></div>
-          <div id="captcha-piece" class="captcha-piece"></div>
+        <p class="font-semibold text-sm mb-2" style="color:#E08600">检测到异常注册频率</p>
+        <p class="text-xs mb-3" style="color:#7B8AA8">请完成滑动拼图验证</p>
+        <div style="position:relative;width:280px;margin:0 auto">
+          <div id="captcha-container" style="width:280px;min-height:155px;background:#fff"></div>
+          <button id="captcha-refresh-btn" onclick="loadCaptcha()" style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.9);border:1px solid rgba(0,0,0,0.1);box-shadow:0 2px 6px rgba(0,0,0,0.15);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:10" title="刷新验证码"><svg width="16" height="16" fill="none" stroke="#5A6B89" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
         </div>
-        <!-- 🆕 滑轨 -->
-        <div class="slide-track" id="captcha-track" style="height:44px;border-radius:22px">
-          <div class="slide-progress" id="captcha-bar"></div>
-          <span class="slide-hint" id="captcha-hint">→ 拖动下方滑块使拼图对准缺口 →</span>
-          <div class="slide-thumb" id="captcha-thumb" style="left:0;width:44px;height:44px">➜</div>
-        </div>
-        <p id="cap-status" class="text-xs text-gray-500 mt-2">拖动滑块使拼图对准缺口</p>
+        <p id="cap-status" class="text-xs mt-3" style="color:#7B8AA8">拖动滑块，使拼图对齐</p>
       </div>
 
-      <!-- ====== PAGE 3: Home ====== -->
+      <!-- ====== 首页 ====== -->
       <div id="page-home" class="page py-2">
-        <div id="home-card" class="rounded-2xl border p-5 mb-5">
+        <div id="home-card" class="rounded-2xl border p-5 mb-5" style="border-color:#E2E8F4">
           <div id="home-badge" class="inline-block rounded-lg px-3 py-1 text-xs font-bold uppercase mb-4"></div>
-          <h2 id="home-title" class="text-xl font-bold mb-1"></h2>
-          <p id="home-sub" class="text-sm font-medium mb-5"></p>
-          <div class="border-t border-gray-200 pt-4 space-y-2">
-            <div class="flex justify-between text-sm"><span class="text-gray-500">手机号</span><span class="font-semibold text-gray-900" id="home-phone"></span></div>
-            <div class="flex justify-between text-sm"><span class="text-gray-500">停车券</span><span class="font-semibold" id="home-coupon"></span></div>
+          <h2 id="home-title" class="text-xl font-bold mb-1" style="color:#1F2A44"></h2>
+          <p id="home-sub" class="text-sm font-medium mb-5" style="color:#7B8AA8"></p>
+          <div class="border-t pt-4 space-y-2" style="border-color:#F0F4FA">
+            <div class="flex justify-between text-sm"><span style="color:#7B8AA8">手机号</span><span class="font-semibold" style="color:#1F2A44" id="home-phone"></span></div>
+            <div class="flex justify-between text-sm"><span style="color:#7B8AA8">停车券</span><span class="font-semibold" style="color:#0E7C45" id="home-coupon"></span></div>
           </div>
         </div>
-        <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm mb-3">退出登录</button>
-        <button onclick="goCancel()" class="w-full bg-red-50 border border-red-200 text-red-600 py-3.5 rounded-xl font-semibold text-sm">注销账号</button>
+        <button onclick="goRegister()" class="w-full py-3.5 rounded-xl font-semibold text-sm mb-3" style="background:#FFFFFF;color:#5A6B89;border:1px solid #D0DDF2">退出登录</button>
+        <button onclick="goCancel()" class="w-full py-3.5 rounded-xl font-semibold text-sm" style="background:#FFF1F3;color:#E0294B;border:1px solid #FFD9DF">注销账号</button>
       </div>
 
-      <!-- ====== PAGE 4: Cancel ====== -->
+      <!-- ====== 注销 ====== -->
       <div id="page-cancel" class="page py-2">
-        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-4">
-          <p class="font-bold text-amber-700 text-sm mb-3">⚠️ 请注意</p>
-          <p class="text-amber-800 text-xs leading-relaxed mb-1">• 注销后停车券将立即失效</p>
-          <p class="text-amber-800 text-xs leading-relaxed mb-1">• 90 天内无法重新领取</p>
-          <p class="text-amber-800 text-xs leading-relaxed">• 个人信息将被合规擦除</p>
+        <div class="rounded-2xl p-5 mb-4" style="background:#FFF1D0;border:1px solid #FFE3A8">
+          <p class="font-bold text-sm mb-3" style="color:#8B5A00">请注意</p>
+          <p class="text-xs leading-relaxed mb-1" style="color:#8B5A00">· 注销后停车券将立即失效</p>
+          <p class="text-xs leading-relaxed mb-1" style="color:#8B5A00">· 90 天内无法重新领取</p>
+          <p class="text-xs leading-relaxed" style="color:#8B5A00">· 个人信息将被合规擦除</p>
         </div>
-      <div class="bg-white border border-gray-200 rounded-2xl p-5 mb-5 text-center">
-        <p class="text-sm font-semibold text-gray-900 mb-1">当前账号</p>
-        <p id="cancel-phone" class="text-sm text-gray-500 mb-5"></p>
-        <button id="cancel-btn" onclick="showCancelConfirm()" class="w-full bg-red-600 text-white py-3.5 rounded-xl font-bold text-sm">确认注销账号</button>
+      <div class="rounded-2xl p-5 mb-5 text-center" style="background:#FFFFFF;border:1px solid #E2E8F4">
+        <p class="text-sm font-semibold mb-1" style="color:#1F2A44">当前账号</p>
+        <p id="cancel-phone" class="text-sm mb-5" style="color:#7B8AA8"></p>
+        <button id="cancel-btn" onclick="showCancelConfirm()" class="w-full py-3.5 rounded-xl font-bold text-sm" style="background:#E0294B;color:#FFFFFF">确认注销账号</button>
       </div>
-      <button onclick="goHome()" class="w-full border border-gray-300 text-gray-500 py-3 rounded-xl text-sm">返回</button>
+      <button onclick="goHome()" class="w-full py-3 rounded-xl text-sm" style="background:#FFFFFF;color:#5A6B89;border:1px solid #D0DDF2">返回</button>
     </div>
 
     <!-- Cancel Confirm Modal -->
-    <div id="cancel-confirm-modal" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-6" style="display:none">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-xs">
-        <p class="font-bold text-gray-900 mb-2">确认注销？</p>
-        <p class="text-sm text-gray-500 mb-5">注销后停车券将失效，90 天内无法再次领取。</p>
-        <button onclick="doCancel()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm mb-2">确定注销</button>
-        <button onclick="hideCancelConfirm()" class="w-full border border-gray-300 text-gray-500 py-3 rounded-xl text-sm">取消</button>
+    <div id="cancel-confirm-modal" class="fixed inset-0 z-50 items-center justify-center p-6" style="display:none;background:rgba(31,42,68,0.45);backdrop-filter:blur(2px)">
+      <div class="rounded-2xl p-6 w-full max-w-xs" style="background:#FFFFFF">
+        <p class="font-bold mb-2" style="color:#1F2A44">确认注销？</p>
+        <p class="text-sm mb-5" style="color:#7B8AA8">注销后停车券将失效，90 天内无法再次领取。</p>
+        <button onclick="doCancel()" class="w-full py-3 rounded-xl font-bold text-sm mb-2" style="background:#E0294B;color:#FFFFFF">确定注销</button>
+        <button onclick="hideCancelConfirm()" class="w-full py-3 rounded-xl text-sm" style="background:#FFFFFF;color:#5A6B89;border:1px solid #D0DDF2">取消</button>
       </div>
     </div>
 
-      <!-- ====== PAGE 5: Blocked ====== -->
+      <!-- ====== 风控拦截 ====== -->
       <div id="page-blocked" class="page py-4 text-center">
-        <div class="w-16 h-16 bg-red-50 border-2 border-red-200 rounded-full mx-auto mb-5 flex items-center justify-center">
-          <span class="text-red-600 text-3xl font-extrabold">!</span>
+        <div class="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style="background:#FFF1F3;border:2px solid #FFD9DF">
+          <span class="text-3xl font-extrabold" style="color:#E0294B">!</span>
         </div>
-        <h2 class="text-xl font-bold text-red-600 mb-2">操作受限</h2>
-        <p class="text-sm text-red-800 mb-5">当前账号因触发风控策略已被系统限制</p>
-        <div class="border-t border-gray-100 pt-4 mb-4">
-          <p class="text-xs text-gray-500 font-semibold mb-2">原因说明</p>
-          <p class="text-sm text-gray-600 mb-5" id="blocked-reason"></p>
+        <h2 class="text-xl font-bold mb-2" style="color:#E0294B">操作受限</h2>
+        <p class="text-sm mb-5" style="color:#E0294B">当前账号因触发风控策略已被系统限制</p>
+        <div class="border-t pt-4 mb-4" style="border-color:#F0F4FA">
+          <p class="text-xs font-semibold mb-2" style="color:#7B8AA8">原因说明</p>
+          <p class="text-sm mb-5" style="color:#5A6B89" id="blocked-reason"></p>
         </div>
-        <div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-3">
-          <p class="text-xs text-gray-500" id="blocked-hint">请于 90 天后重新尝试</p>
-          <p id="blocked-timer" class="text-sm font-bold text-red-600 mt-1" style="display:none"></p>
+        <div class="rounded-xl px-4 py-3 mb-3" style="background:#F6F9FE;border:1px solid #E2E8F4">
+          <p class="text-xs" style="color:#7B8AA8" id="blocked-hint">请于 90 天后重新尝试</p>
+          <p id="blocked-timer" class="text-sm font-bold mt-1" style="color:#E0294B;display:none"></p>
         </div>
-        <button onclick="goRegister()" class="w-full border border-gray-300 text-gray-600 py-3.5 rounded-xl font-semibold text-sm mb-2">返回首页</button>
-        <button id="blocked-retry-btn" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-semibold text-sm" style="display:none" onclick="goRegister()">重新尝试</button>
+        <button onclick="goRegister()" class="w-full py-3.5 rounded-xl font-semibold text-sm mb-2" style="background:#FFFFFF;color:#5A6B89;border:1px solid #D0DDF2">返回首页</button>
+        <button id="blocked-retry-btn" class="w-full py-3.5 rounded-xl font-semibold text-sm" style="background:#3B6FE0;color:#FFFFFF;display:none" onclick="goRegister()">重新尝试</button>
       </div>
 
       <!-- Loading overlay -->
-      <div id="loading" class="absolute inset-0 bg-white/80 rounded-3xl flex items-center justify-center z-10" style="display:none">
+      <div id="loading" class="absolute inset-0 rounded-2xl flex items-center justify-center z-10" style="display:none;background:rgba(255,255,255,0.8);border-radius:20px">
         <div class="flex flex-col items-center gap-2">
-          <div class="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin"></div>
-          <span id="loading-txt" class="text-sm text-gray-500">提交中...</span>
+          <div class="w-8 h-8 border-2 rounded-full animate-spin" style="border-color:#D0DDF2;border-top-color:#3B6FE0"></div>
+          <span id="loading-txt" class="text-sm" style="color:#7B8AA8">提交中...</span>
         </div>
       </div>
     </div>
 
     <!-- Trust badge -->
     <div class="flex items-center justify-center gap-1.5 mt-5">
-      <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-      <span class="text-xs text-gray-400">数据加密传输 · 隐私安全保护</span>
+      <svg class="w-3.5 h-3.5" style="color:#0E7C45" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      <span class="text-xs" style="color:#7B8AA8">数据加密传输 · 隐私安全保护</span>
     </div>
   </div>
 
+<script src="/jigsaw.min.js"></script>
 <script>
 const API = location.origin + '/api/v1';
 let _phone = '', _name = '';
@@ -280,7 +247,45 @@ function goCancel() {
 }
 
 // ── Back to Home ──
-function goHome() { showPage('home'); }
+function goHome() {
+  var phoneInput = document.getElementById('phone').value.trim();
+  if (/^1[3-9]\d{9}$/.test(phoneInput)) {
+    _phone = phoneInput;
+    _name = document.getElementById('name').value.trim() || '用户';
+    showLoading('查询账户...');
+    doQuickLogin();
+    return;
+  }
+  // No phone input — try localStorage
+  var u = localStorage.getItem('parking_user');
+  if (u) {
+    try {
+      var parsed = JSON.parse(u);
+      _phone = parsed.phone;
+      renderHome(parsed);
+      showPage('home');
+      return;
+    } catch (e) {}
+  }
+  regError('请先输入手机号再点击直接登陆');
+}
+
+async function doQuickLogin() {
+  try {
+    const deviceId = getDeviceId();
+    const r = await fetch(API + '/user/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: _phone, name: _name, deviceId }) });
+    const d = await r.json();
+    hideLoading();
+    if (d.code === 20000) {
+      const u = { phone: _phone, hasCoupon: d.data.hasCoupon != null ? d.data.hasCoupon : true, isExisting: d.data.isExisting != null ? d.data.isExisting : false };
+      localStorage.setItem('parking_user', JSON.stringify(u));
+      renderHome(u);
+      showPage('home');
+    } else {
+      regError(d.message || '登录失败，请核对手机号后重试');
+    }
+  } catch { hideLoading(); regError('网络错误，请检查连接'); }
+}
 
 // ── Blocked page countdown ──
 let blockCountdownId = null, blockedSince = 0, blockedDuration = 60;
@@ -330,8 +335,13 @@ async function doRegister(captchaToken) {
   const ep = captchaToken ? '/user/verify-captcha' : '/user/register';
   const deviceId = getDeviceId();
   const body = captchaToken ? { phone: _phone, name: _name, captchaToken, deviceId } : { phone: _phone, name: _name, deviceId };
+  // 🆕 jigsaw 直通：发送 X-Jigsaw-Verified: 1 头让后端自动生成 token
+  const headers = { 'Content-Type': 'application/json' };
+  if (typeof captchaToken === 'string' && captchaToken.startsWith('jigsaw-')) {
+    headers['X-Jigsaw-Verified'] = '1';
+  }
   try {
-    const r = await fetch(API + ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(API + ep, { method: 'POST', headers, body: JSON.stringify(body) });
     const d = await r.json();
     if (d.code === 20000) {
       const u = { phone: _phone, hasCoupon: d.data.hasCoupon != null ? d.data.hasCoupon : true, isExisting: d.data.isExisting != null ? d.data.isExisting : false };
@@ -341,7 +351,8 @@ async function doRegister(captchaToken) {
     } else if (d.code === 40101) {
       resetCaptcha();
       showPage('captcha');
-      loadCaptcha();
+      // 延迟初始化 jigsaw，等待 DOM 完成布局（display:block 生效后才有尺寸）
+      setTimeout(function(){ loadCaptcha(); }, 100);
     } else if (d.code === 40300 || d.code === 40301 || d.code === 40302) {
       const msg = d.message || '';
       document.getElementById('blocked-reason').textContent = msg || '检测到历史注销记录，90天内无法再次领取';
@@ -415,194 +426,68 @@ async function doCancel() {
   hideLoading();
 }
 
-// ═══════════════ CAPTCHA ═══════════════
-let capData = null, capDragging = false, capScale = 1, capMaxX = 0;
-let capPieceX = 0, capPieceY = 0, capStartX = 0, capStartLeft = 0;
-let capCanvas, capPiece, capThumb, capBar;
-
-function capInit() {
-  capCanvas = document.getElementById('captcha-canvas');
-  capPiece = document.getElementById('captcha-piece');
-  capThumb = document.getElementById('captcha-thumb');
-  capBar = document.getElementById('captcha-bar');
-
-  if (!capPiece || !capThumb) return; // 元素未就绪则跳过，下次 loadCaptcha 时重新绑定
-
-  // 拼图块直接拖拽
-  capPiece.addEventListener('mousedown', puzzleStart);
-  capPiece.addEventListener('touchstart', puzzleStart, { passive: false });
-
-  // 滑轨 thumb 拖拽
-  capThumb.addEventListener('mousedown', thumbStart);
-  capThumb.addEventListener('touchstart', thumbStart, { passive: false });
-
-  document.addEventListener('mousemove', capMove);
-  document.addEventListener('mouseup', capEnd);
-  document.addEventListener('touchmove', capMove, { passive: false });
-  document.addEventListener('touchend', capEnd);
-}
+// ═══════════════ CAPTCHA (yeild/jigsaw) ═══════════════
+let capDragging = false;
+let capFailCount = 0; // 业务逻辑：失败3次封1分钟
 
 function loadCaptcha() {
-  fetch(API + '/captcha/generate').then(r => r.json()).then(d => {
-    if (d.code !== 20000) {
-      document.getElementById('cap-status').textContent = '验证码加载失败';
-      if (d.code === 40302) {
-        document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
-        document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
-        showPage('blocked');
-        startBlockCountdown();
-      }
-      return;
-    }
-    capData = d.data;
-    // 🆕 延迟 50ms 确保 reflow，offsetWidth 才能取到实际宽度
-    setTimeout(function(){ renderCaptcha(d.data); }, 50);
-  }).catch(function(){ document.getElementById('cap-status').textContent = '网络错误'; });
-}
-
-function renderCaptcha(data) {
-  var cw = capCanvas.offsetWidth;
-  if (!cw || cw < 50) cw = data.canvas.width; // offsetWidth 为 0 时 fallback
-  capScale = cw / data.canvas.width;
-  capMaxX = (data.canvas.width - data.puzzle.width) * capScale;
-
-  var rawY = (data.puzzleY != null) ? Number(data.puzzleY) : (data.canvas.height - data.puzzle.height) / 2;
-  if (isNaN(rawY) || rawY < 0 || rawY > data.canvas.height) rawY = (data.canvas.height - data.puzzle.height) / 2;
-  capPieceY = Math.round(rawY * capScale);
-
-  // 背景 SVG：viewBox + preserveAspectRatio=none 确保无缝填充，不留白边
-  capCanvas.innerHTML = data.backgroundSvg;
-  var bgSvg = capCanvas.querySelector('svg');
-  if (bgSvg) {
-    var w = data.canvas.width, h = data.canvas.height;
-    bgSvg.setAttribute('width', w);
-    bgSvg.setAttribute('height', h);
-    bgSvg.setAttribute('preserveAspectRatio', 'none');
-    bgSvg.style.width = w + 'px';
-    bgSvg.style.height = h + 'px';
-  }
-
-  // 把拼图块移进 canvas 内部，成为子元素，定位与缺口完全对应
-  capCanvas.appendChild(capPiece);
-
-  // 拼图块 SVG（与缺口位图案完全一致）
-  capPiece.innerHTML = data.puzzleSvg;
-  capPiece.style.width = (data.puzzle.width * capScale) + 'px';
-  capPiece.style.height = (data.puzzle.height * capScale) + 'px';
-  capPiece.style.top = capPieceY + 'px';
-  capPieceX = 0;
-  setCapPosition(0);
-
-  // 复位滑轨
-  capThumb.style.left = '0px';
-  capBar.style.width = '0%';
-  document.getElementById('captcha-hint').textContent = '→ 拖动下方滑块使拼图对准缺口 →';
-
-  document.getElementById('cap-status').textContent = '';
-  capDragging = false;
-}
-
-function setCapPosition(x) {
-  capPieceX = Math.max(0, Math.min(x, capMaxX));
-  // 用 left/top 定位，兼容性和可调试性更好
-  capPiece.style.left = capPieceX.toFixed(1) + 'px';
-
-  // 同步 thumb 位置
-  const trackW = capThumb.parentElement.offsetWidth - capThumb.offsetWidth;
-  const thumbLeft = capMaxX > 0 ? (capPieceX / capMaxX) * trackW : 0;
-  capThumb.style.left = Math.max(0, Math.min(thumbLeft, trackW)) + 'px';
-  capBar.style.width = capMaxX > 0 ? ((capPieceX / capMaxX) * 100).toFixed(0) + '%' : '0%';
-}
-
-// ── 拼图块直接拖拽 ──
-function puzzleStart(e) {
-  capStartX = e.touches ? e.touches[0].clientX : e.clientX;
-  capStartLeft = capPieceX;
-  capDragging = 1; // 1=dragging piece
-  document.getElementById('captcha-hint').textContent = '...';
-  e.preventDefault();
-}
-
-// ── 滑轨 thumb 拖拽 ──
-function thumbStart(e) {
-  capStartX = e.touches ? e.touches[0].clientX : e.clientX;
-  capStartLeft = parseFloat(capThumb.style.left || 0);
-  capDragging = 2; // 2=dragging thumb
-  document.getElementById('captcha-hint').textContent = '...';
-  e.preventDefault();
-}
-
-function capMove(e) {
-  if (!capDragging) return;
-  const cx = e.touches ? e.touches[0].clientX : e.clientX;
-  const dx = cx - capStartX;
-
-  if (capDragging === 1) {
-    // 拖拼图块 → 同步 thumb
-    setCapPosition(capStartLeft + dx);
-  } else {
-    // 拖 thumb → 同步拼图块
-    const trackW = capThumb.parentElement.offsetWidth - capThumb.offsetWidth;
-    const thumbLeft = Math.max(0, Math.min(capStartLeft + dx, trackW));
-    capThumb.style.left = thumbLeft + 'px';
-    capBar.style.width = trackW > 0 ? ((thumbLeft / trackW) * 100).toFixed(0) + '%' : '0%';
-    const pieceLeft = trackW > 0 ? (thumbLeft / trackW) * capMaxX : 0;
-    capPieceX = pieceLeft;
-    capPiece.style.left = capPieceX.toFixed(1) + 'px';
-  }
-  e.preventDefault();
-}
-
-function capEnd() {
-  if (!capDragging) return;
-  capDragging = false;
-  const serverX = Math.round(capPieceX / capScale);
-  verifyCaptcha(serverX);
-}
-
-async function verifyCaptcha(sliderX) {
-  document.getElementById('cap-status').textContent = '验证中...';
-  console.log('[verify] capPieceX=' + capPieceX.toFixed(1) + ' capScale=' + capScale + ' serverX=' + sliderX);
+  const el = document.getElementById('captcha-container');
+  if (!el) return;
+  el.innerHTML = '';
+  document.getElementById('cap-status').textContent = '拖动滑块，使拼图对齐';
+  document.getElementById('cap-status').style.color = '#7B8AA8';
   try {
-    const v = await fetch(API + '/captcha/verify', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ captchaId: capData.captchaId, sliderX })
-    }).then(r => r.json());
-    console.log('[verify] response code=' + v.code + ' msg=' + (v.message||'') + ' deviation=' + ((v.data && v.data.deviation)||'N/A'));
-    if (v.code === 20000) {
-      document.getElementById('cap-status').textContent = '✅ 验证通过';
-      document.getElementById('captcha-hint').textContent = '✅ 验证通过';
-      doRegister(v.data.token);
-    } else if (v.code === 40302) {
-      // 🆕 IP 被封 → 显示带倒计时的封禁页
-      document.getElementById('blocked-reason').textContent = '验证码连续失败触发 IP 临时封禁';
-      document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
-      showPage('blocked');
-      startBlockCountdown();
-    } else {
-      const failCount = (v.data && v.data.failCount) || 0;
-      document.getElementById('cap-status').textContent = '❌ 验证失败 (' + failCount + '/3)，请重试';
-      document.getElementById('captcha-hint').textContent = '→ 拖动下方滑块使拼图对准缺口 →';
-      if (v.code === 40007) document.getElementById('cap-status').textContent = '验证码已过期，正在刷新...';
-      setTimeout(loadCaptcha, 1200);
-    }
-  } catch {
-    document.getElementById('cap-status').textContent = '网络错误，请重试';
+    jigsaw.init({
+      el: el,
+      width: 280,
+      height: 155,
+      onSuccess: function () {
+        // 成功：jigsaw 已通过验证 → 生成 captchaId 用于注册
+        document.getElementById('cap-status').textContent = '验证通过，正在注册...';
+        document.getElementById('cap-status').style.color = '#0E7C45';
+        capFailCount = 0;
+        var jigsawId = 'jigsaw-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        doRegister(jigsawId);
+      },
+      onFail: function () {
+        // 失败：用户拉下对不上缺口 → 累计失败次数
+        capFailCount++;
+        if (capFailCount >= 3) {
+          // 业务逻辑：失败3次封禁1分钟 → 直接跳转到封禁页
+          document.getElementById('cap-status').textContent = '连续失败 3 次，IP 已被临时封禁 1 分钟';
+          document.getElementById('cap-status').style.color = '#E0294B';
+          document.getElementById('blocked-reason').textContent = '连续 3 次拼图验证失败';
+          document.getElementById('blocked-hint').textContent = 'IP 已被临时封禁';
+          startBlockCountdown();
+          showPage('blocked');
+          capFailCount = 0;
+        } else {
+          document.getElementById('cap-status').textContent = '验证失败 (' + capFailCount + '/3)，请重试';
+          document.getElementById('cap-status').style.color = '#E0294B';
+        }
+      },
+      onRefresh: function () {
+        document.getElementById('cap-status').textContent = '拖动滑块，使拼图对齐';
+        document.getElementById('cap-status').style.color = '#7B8AA8';
+      }
+    });
+  } catch (e) {
+    document.getElementById('cap-status').textContent = '验证码初始化失败';
+    console.error('[jigsaw]', e);
   }
 }
 
 function resetCaptcha() {
-  capPieceX = 0;
-  if (capPiece) setCapPosition(0);
-  if (capThumb) { capThumb.style.left = '0px'; capBar.style.width = '0%'; }
+  const el = document.getElementById('captcha-container');
+  if (el) el.innerHTML = '';
   document.getElementById('cap-status').textContent = '';
   capDragging = false;
+  capFailCount = 0;
 }
 
-// ── Init: restore session + captcha handlers ──
+// ── Init: restore session ──
 function doInit() {
   try {
-    capInit();
     var u = localStorage.getItem('parking_user');
     if (u) {
       var parsed = JSON.parse(u);

@@ -22,23 +22,23 @@ export default function CancelScreen() {
   }, [])
 
   const handleCancel = () => {
-    Alert.alert('确认注销', '注销后停车券将失效，90 天内无法再次领取。确定继续？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert('Confirm Deletion', 'Your coupon will become invalid. Cannot re-register for 90 days. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: '确认注销', style: 'destructive',
+        text: 'Confirm', style: 'destructive',
         onPress: async () => {
           setLoading(true)
           try {
             const deviceId = await getDeviceId()
             await Promise.race([
               client.post('/user/cancel', { phone: userInfo?.phone, deviceId }),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('请求超时，请重试')), 15000))
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 15000))
             ])
             await storage.removeItem('user_info')
             navigate('RegisterScreen')
-            Alert.alert('已注销', '账号信息已完成合规擦除')
+            Alert.alert('Deleted', 'Account data has been permanently erased')
           } catch (err) {
-            Alert.alert('错误', err.response?.data?.message || '注销失败')
+            Alert.alert('Error', err.response?.data?.message || 'Deletion failed')
           } finally {
             setLoading(false)
           }
@@ -92,31 +92,29 @@ export default function CancelScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
+  safeArea: { flex: 1, backgroundColor: '#171717' },
   container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 60, paddingBottom: 40 },
 
   header: { alignItems: 'center', marginBottom: 28 },
-  brand: { fontSize: 24, fontWeight: '700', color: '#0F172A', letterSpacing: 0.5, marginBottom: 4 },
-  brandSub: { fontSize: 13, color: '#64748B' },
+  brand: { fontSize: 24, fontWeight: '700', color: '#FAFAFA', letterSpacing: -0.6, marginBottom: 4 },
+  brandSub: { fontSize: 13, color: '#888888' },
 
   warnCard: {
-    backgroundColor: '#FFFBEB', borderRadius: 16,
-    borderWidth: 1, borderColor: '#FDE68A', padding: 20, marginBottom: 16,
+    backgroundColor: '#1A1A00', borderRadius: 8,
+    borderWidth: 1, borderColor: '#665500', padding: 20, marginBottom: 16,
   },
-  warnTitle: { fontSize: 15, fontWeight: '700', color: '#D97706', marginBottom: 12 },
-  warnItem: { fontSize: 13, color: '#92400E', lineHeight: 24 },
+  warnTitle: { fontSize: 15, fontWeight: '700', color: '#f5a623', marginBottom: 12 },
+  warnItem: { fontSize: 13, color: '#CCA300', lineHeight: 24 },
 
   card: {
-    backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0',
+    backgroundColor: '#1A1A1A', borderRadius: 8, borderWidth: 1, borderColor: '#333333',
     padding: 24, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
   },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: '#0F172A', marginBottom: 8 },
-  cardHint: { fontSize: 12, color: '#94A3B8', marginBottom: 24 },
+  cardTitle: { fontSize: 14, fontWeight: '600', color: '#FAFAFA', marginBottom: 8 },
+  cardHint: { fontSize: 12, color: '#666666', marginBottom: 24 },
   btn: {
-    width: '100%', backgroundColor: '#DC2626', borderRadius: 14,
+    width: '100%', backgroundColor: '#ee0000', borderRadius: 6,
     paddingVertical: 14, alignItems: 'center',
   },
-  btnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  btnText: { color: '#FAFAFA', fontSize: 16, fontWeight: '700' },
 })

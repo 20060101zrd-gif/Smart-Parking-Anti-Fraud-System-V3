@@ -17,13 +17,13 @@ const Stack = createStackNavigator();
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor="#5B9BD5" />
+      <StatusBar style="light" backgroundColor="#111111" />
       <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
           initialRouteName="RegisterScreen"
           screenOptions={{
-            headerStyle: { backgroundColor: '#5B9BD5' },
-            headerTintColor: '#fff',
+            headerStyle: { backgroundColor: '#111111' },
+            headerTintColor: '#FAFAFA',
             headerTitleStyle: { fontWeight: '600' },
           }}
         >

@@ -101,11 +101,21 @@ class MySQLClient {
         id              INT           AUTO_INCREMENT PRIMARY KEY,
         username        VARCHAR(128)  NOT NULL UNIQUE,
         password_hash   VARCHAR(255)  NOT NULL,
+        role            VARCHAR(32)   NOT NULL DEFAULT 'admin',
         status          TINYINT       NOT NULL DEFAULT 1,
         last_login_ip   VARCHAR(45),
-        created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+        created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at      DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // 🆕 迁移：老库可能没有 role / updated_at 列，自动添加
+    try {
+      await this.run(`ALTER TABLE sys_admins ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'admin' AFTER password_hash`);
+    } catch (e) { /* 列已存在，忽略 */ }
+    try {
+      await this.run(`ALTER TABLE sys_admins ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`);
+    } catch (e) { /* 列已存在，忽略 */ }
 
     // 2. 审计日志表
     await this.run(`
@@ -267,10 +277,18 @@ class MySQLClient {
       console.log(`⏳ [MySQL] 未检测到初始管理员账号 [${env.ADMIN_USERNAME}]，正在自动创建...`);
       const hash = await argon2.hash(env.ADMIN_PASSWORD, { type: argon2.argon2id });
       await this.run(
-        'INSERT INTO sys_admins (username, password_hash) VALUES (?, ?)',
+        'INSERT INTO sys_admins (username, password_hash, role, status) VALUES (?, ?, \'super_admin\', 1)',
         [env.ADMIN_USERNAME, hash]
       );
-      console.log('✅ [MySQL] 初始管理员账号注入成功');
+      console.log('✅ [MySQL] 初始管理员账号注入成功 (super_admin)');
+    } else {
+      // 已有管理员：确保角色升级为 super_admin（从旧版本迁移）
+      try {
+        await this.run(
+          'UPDATE sys_admins SET role = \'super_admin\' WHERE username = ? AND role != \'super_admin\'',
+          [env.ADMIN_USERNAME]
+        );
+      } catch (e) { /* 兼容旧表没有 role 列的情况 */ }
     }
   }
 

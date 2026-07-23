@@ -8,9 +8,11 @@ CREATE TABLE IF NOT EXISTS sys_admins (
     id              INT           AUTO_INCREMENT PRIMARY KEY,
     username        VARCHAR(128)  NOT NULL UNIQUE               COMMENT '管理员用户名',
     password_hash   VARCHAR(255)  NOT NULL                      COMMENT 'Argon2id 密码哈希',
+    role            VARCHAR(32)   NOT NULL DEFAULT 'admin'      COMMENT '角色: super_admin / admin',
     status          TINYINT       NOT NULL DEFAULT 1            COMMENT '1=正常 0=禁用',
     last_login_ip   VARCHAR(45)                                 COMMENT '最近登录 IP',
-    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at      DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员账号表';
 
 -- 2. 审计日志表（高频批量写入）
@@ -121,7 +123,7 @@ CREATE TABLE IF NOT EXISTS sys_whitelist (
     INDEX idx_wl_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='白名单表（Redis 不可用时持久化恢复）';
 
--- 11. 默认风控配置种子数据
+-- 12. 默认风控配置种子数据
 INSERT IGNORE INTO sys_config (config_key, config_value) VALUES
 ('device_register_limit', '3'),
 ('device_cancel_limit', '2'),

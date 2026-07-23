@@ -59,7 +59,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
   const fetchCaptcha = useCallback(async () => {
     setLoading(true);
     setStatus('idle');
-    setStatusMsg('加载验证码中...');
+    setStatusMsg('Loading captcha...');
     setVerifying(false);
 
     // 复位滑块
@@ -76,7 +76,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
         setBgSvg(d.backgroundSvg);
         setPzSvg(d.puzzleSvg);
         setPuzzleY((d.puzzleY || 50) * scale);
-        setStatusMsg('拖动下方滑块使拼图对准缺口');
+        setStatusMsg('Drag slider to align puzzle piece');
         setCountdown(d.expiresIn);
 
         // 倒计时
@@ -87,15 +87,15 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
           if (remaining <= 0) {
             clearInterval(countdownRef.current);
             setStatus('expired');
-            setStatusMsg('验证码已过期，正在刷新...');
+            setStatusMsg('Captcha expired. Refreshing...');
             setTimeout(fetchCaptcha, 800);
           }
         }, 1000);
       } else {
-        setStatusMsg('验证码加载失败');
+        setStatusMsg('Captcha failed to load');
       }
     } catch {
-      setStatusMsg('网络异常，验证码加载失败');
+      setStatusMsg('Network error. Captcha failed to load');
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
   const handleFail = useCallback((failCount) => {
     setStatus('fail');
     const remain = failCount != null ? Math.max(0, 3 - failCount) : '?';
-    setStatusMsg(`❌ 验证失败，剩余 ${remain} 次机会，自动刷新中...`);
+    setStatusMsg(`Failed. ${remain} attempt(s) remaining. Refreshing...`);
 
     // 弹回起点
     Animated.spring(sliderX, {
@@ -129,7 +129,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
 
     setVerifying(true);
     setStatus('verifying');
-    setStatusMsg('校验中...');
+    setStatusMsg('Verifying...');
 
     // 缩放回后端坐标
     const serverX = Math.round(xScaled / scale);
@@ -144,7 +144,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
       if (res.data?.code === 20000) {
         // ✅ 验证通过
         setStatus('success');
-        setStatusMsg('✅ 验证通过');
+        setStatusMsg('Verified');
         // 停留在当前位置
         // 回调 token
         setTimeout(() => onVerifyRef.current && onVerifyRef.current(res.data.data.token), 600);
@@ -169,8 +169,8 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
       },
 
       onPanResponderGrant: () => {
-        setStatus('dragging');
-        setStatusMsg('拖动中...');
+      setStatus('dragging');
+      setStatusMsg('Dragging...');
       },
 
       onPanResponderMove: (_, g) => {
@@ -194,10 +194,10 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
   });
 
   const trackLabel =
-    status === 'success' ? '✅ 验证通过' :
-    status === 'fail'    ? '❌ 验证失败' :
+    status === 'success' ? 'Verified' :
+    status === 'fail'    ? 'Failed' :
     status === 'dragging' ? '...' :
-    '→ 拖动滑块到缺口位置 →';
+    'Drag slider to align puzzle piece';
 
   // ── 渲染 ──────────────────────────────────────────
   return (
@@ -255,7 +255,7 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
 
       {/* 状态栏 */}
       <View style={styles.statusBar}>
-        {loading && <ActivityIndicator size="small" color="#2563eb" />}
+        {loading && <ActivityIndicator size="small" color="#0070F3" />}
         <Text style={[
           styles.statusText,
           status === 'success' && styles.statusSuccess,
@@ -272,11 +272,11 @@ export default function SliderCaptcha({ onVerify, onCancel }) {
       {/* 操作按钮 */}
       <View style={styles.actions}>
         <Text style={styles.refreshBtn} onPress={fetchCaptcha}>
-          🔄 刷新验证码
+          Refresh Captcha
         </Text>
         {onCancel && (
           <Text style={styles.cancelBtn} onPress={onCancel}>
-            取消
+            Cancel
           </Text>
         )}
       </View>
@@ -291,14 +291,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
-  // 画布
+  // Canvas
   canvas: {
     height: CANVAS_H * scale + 4,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
+    borderWidth: 1,
+    borderColor: '#333333',
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#94a3b8',
+    backgroundColor: '#2A2A2A',
   },
   canvasSvgArea: {
     position: 'absolute',
@@ -307,33 +307,33 @@ const styles = StyleSheet.create({
   },
   canvasPlaceholder: {
     flex: 1,
-    backgroundColor: '#94a3b8',
+    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
   },
   canvasLabel: {
-    color: '#9ca3af',
+    color: '#666666',
     fontSize: 13,
     letterSpacing: 4,
   },
 
-  // 拼图块 wrapper（绝对定位，跟随滑块 X 平移）
+  // Puzzle piece wrapper
   puzzleWrapper: {
     position: 'absolute',
     left: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.5,
     shadowRadius: 4,
     elevation: 6,
   },
 
-  // 滑轨
+  // Track
   track: {
     height: 46,
     marginTop: 12,
-    borderRadius: 23,
-    backgroundColor: '#e5e7eb',
+    borderRadius: 100,
+    backgroundColor: '#333333',
     justifyContent: 'center',
     overflow: 'hidden',
   },
@@ -342,21 +342,21 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: 'rgba(99,102,241,0.25)',
+    backgroundColor: 'rgba(0,112,243,0.2)',
   },
   trackHint: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#666666',
     textAlign: 'center',
     zIndex: 1,
   },
 
-  // 滑块 thumb
+  // Thumb
   thumb: {
     position: 'absolute',
     left: 0,
     top: 0,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#0070F3',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // 状态
+  // Status
   statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -383,28 +383,28 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#888888',
   },
-  statusSuccess: { color: '#16a34a', fontWeight: '600' },
-  statusFail:    { color: '#dc2626', fontWeight: '600' },
+  statusSuccess: { color: '#50e3c2', fontWeight: '600' },
+  statusFail:    { color: '#ee0000', fontWeight: '600' },
   countdown: {
     fontSize: 12,
-    color: '#f59e0b',
+    color: '#f5a623',
     fontWeight: '600',
   },
 
-  // 操作
+  // Actions
   actions: {
     flexDirection: 'row',
     marginTop: 6,
     gap: 24,
   },
   refreshBtn: {
-    color: '#2563eb',
+    color: '#0070F3',
     fontSize: 13,
   },
   cancelBtn: {
-    color: '#9ca3af',
+    color: '#666666',
     fontSize: 13,
   },
 });

@@ -12,8 +12,8 @@ class AuthService {
   /**
    * 管理员登录验证与 Token 签发
    */
-  async login(username, password) {
-    const admin = await db.get('SELECT id, password_hash, status FROM sys_admins WHERE username = ?', [username]);
+  async login(username, password, ip) {
+    const admin = await db.get('SELECT id, password_hash, status, role FROM sys_admins WHERE username = ?', [username]);
     
     if (!admin) {
       logger.warn({ username, reason: 'user_not_found' }, '管理员登录失败');
@@ -31,10 +31,10 @@ class AuthService {
       throw this._buildBizError(400, 40000, '账号或密码错误');
     }
 
-    // 生成唯一 JTI 并签发 RS256 JWT
+    // 生成唯一 JTI 并签发 RS256 JWT（包含角色信息）
     const jti = crypto.randomUUID();
     const token = jwt.sign(
-      { adminId: admin.id },
+      { adminId: admin.id, role: admin.role },
       keyManager.privateKey,
       {
         algorithm: 'RS256',
@@ -43,9 +43,39 @@ class AuthService {
       }
     );
 
-    logger.info({ adminId: admin.id, username }, '管理员登录成功');
+    // 记录活跃会话到 Redis（用于管理员管理页面展示在线用户）
+    try {
+      if (redisClient.isReady) {
+        const loginIp = ip || '0.0.0.0';
+        await redisClient.set(`auth:session:${admin.id}:${jti}`, loginIp, env.JWT_EXPIRES_IN_SEC || 7200);
+      }
+    } catch (e) {
+      logger.warn({ adminId: admin.id }, 'Redis 会话记录失败（非关键）');
+    }
 
-    return { token, adminId: admin.id, username };
+    // 更新最后登录 IP
+    try {
+      await db.run('UPDATE sys_admins SET last_login_ip = ? WHERE id = ?', [ip, admin.id]);
+    } catch (e) {
+      logger.warn({ adminId: admin.id }, '更新登录 IP 失败');
+    }
+
+    logger.info({ adminId: admin.id, username, role: admin.role }, '管理员登录成功');
+
+    return { token, adminId: admin.id, username, role: admin.role };
+  }
+
+  /**
+   * 清除活跃会话记录（登出时调用）
+   */
+  async clearSession(adminId, jti) {
+    try {
+      if (redisClient.isReady) {
+        await redisClient.del(`auth:session:${adminId}:${jti}`);
+      }
+    } catch (e) {
+      // 非关键操作，静默失败
+    }
   }
 
   /**

@@ -10,6 +10,8 @@ const interceptLogService = require('../services/intercept-log.service');
 
 const whitelistService = require('../services/whitelist.service');
 
+const CryptoUtil = require('../utils/crypto');
+
 const db = require('../data/mysql.client');
 const redisClient = require('../data/redis.client');
 const encryption = require('../utils/encryption');
@@ -42,8 +44,7 @@ class AdminController {
 
 
       // 调用服务层进行账密校验与 JWT 签发
-
-      const { token, adminId, username: adminName } = await authService.login(username, password);
+      const { token, adminId, username: adminName, role } = await authService.login(username, password, req.ip);
 
 
 
@@ -66,8 +67,7 @@ class AdminController {
 
 
       // 响应体中绝对不包含 token
-
-      return success(res, { adminId, username: adminName }, '登录成功');
+      return success(res, { adminId, username: adminName, role }, '登录成功');
 
     } catch (err) {
 
@@ -93,14 +93,12 @@ class AdminController {
 
 
       // 1. 将当前 JWT 的 JTI 写入 Redis 吊销黑名单
-
       await authService.revokeToken(jti, exp, adminId);
 
-
-
+      // 1.5 清除活跃会话记录
+      await authService.clearSession(adminId, jti);
 
       // 2. 记录安全审计日志
-
       auditService.logAction(adminId, 'LOGOUT', jti, req.ip);
 
 
@@ -1046,9 +1044,158 @@ class AdminController {
     } catch (err) { next(err); }
   }
 
+  // ═══════════════════════════════════════════════
+  // 管理员管理 (super_admin only)
+  // ═══════════════════════════════════════════════
+
+  // 查询所有管理员列表
+  async getAdmins(req, res, next) {
+    try {
+      const rows = await db.all(
+        `SELECT id, username, role, status, last_login_ip, created_at, updated_at 
+         FROM sys_admins ORDER BY created_at ASC`
+      );
+      return success(res, { list: rows, total: rows.length }, '管理员列表查询成功');
+    } catch (err) { next(err); }
+  }
+
+  // 创建管理员
+  async createAdmin(req, res, next) {
+    try {
+      const { username, password, role = 'admin' } = req.body;
+      if (!username || !password) {
+        return fail(res, 400, 40000, '用户名和密码不可为空');
+      }
+      if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+        return fail(res, 400, 40000, '用户名需为 3-32 位字母、数字或下划线');
+      }
+      if (password.length < 6) {
+        return fail(res, 400, 40000, '密码至少需要 6 位');
+      }
+      if (!['super_admin', 'admin'].includes(role)) {
+        return fail(res, 400, 40000, '角色必须为 super_admin 或 admin');
+      }
+
+      const existing = await db.get('SELECT id FROM sys_admins WHERE username = ?', [username]);
+      if (existing) {
+        return fail(res, 409, 40900, '该用户名已被使用');
+      }
+
+      const passwordHash = await CryptoUtil.hashPassword(password);
+      await db.run(
+        'INSERT INTO sys_admins (username, password_hash, role, status) VALUES (?, ?, ?, 1)',
+        [username, passwordHash, role]
+      );
+
+      auditService.logAction(req.admin.adminId, 'CREATE_ADMIN', `username=${username} role=${role}`, req.ip);
+      return success(res, { username, role }, '管理员创建成功');
+    } catch (err) { next(err); }
+  }
+
+  // 修改管理员角色/状态
+  async updateAdmin(req, res, next) {
+    try {
+      const targetId = parseInt(req.params.id);
+      const currentAdminId = req.admin.adminId;
+
+      if (targetId === currentAdminId) {
+        return fail(res, 400, 40000, '不允许修改自己的角色或状态');
+      }
+
+      const target = await db.get('SELECT id, username, role, status FROM sys_admins WHERE id = ?', [targetId]);
+      if (!target) {
+        return fail(res, 404, 40400, '目标管理员不存在');
+      }
+
+      const { role, status } = req.body;
+      const updates = [];
+      const params = [];
+
+      if (role !== undefined) {
+        if (!['super_admin', 'admin'].includes(role)) {
+          return fail(res, 400, 40000, '角色必须为 super_admin 或 admin');
+        }
+        updates.push('role = ?');
+        params.push(role);
+      }
+
+      if (status !== undefined) {
+        const s = parseInt(status);
+        if (![0, 1].includes(s)) {
+          return fail(res, 400, 40000, '状态必须为 0(禁用) 或 1(正常)');
+        }
+        updates.push('status = ?');
+        params.push(s);
+      }
+
+      if (updates.length === 0) {
+        return fail(res, 400, 40000, '没有需要修改的字段');
+      }
+
+      params.push(targetId);
+      await db.run(`UPDATE sys_admins SET ${updates.join(', ')} WHERE id = ?`, params);
+
+      auditService.logAction(req.admin.adminId, 'UPDATE_ADMIN', `target=${target.username}`, req.ip);
+      return success(res, { id: targetId }, '管理员信息已更新');
+    } catch (err) { next(err); }
+  }
+
+  // 删除管理员
+  async deleteAdmin(req, res, next) {
+    try {
+      const targetId = parseInt(req.params.id);
+      const currentAdminId = req.admin.adminId;
+
+      if (targetId === currentAdminId) {
+        return fail(res, 400, 40000, '不允许删除自己的账号');
+      }
+
+      const target = await db.get('SELECT id, username FROM sys_admins WHERE id = ?', [targetId]);
+      if (!target) {
+        return fail(res, 404, 40400, '目标管理员不存在');
+      }
+
+      await db.run('DELETE FROM sys_admins WHERE id = ?', [targetId]);
+      auditService.logAction(req.admin.adminId, 'DELETE_ADMIN', `target=${target.username}`, req.ip);
+      return success(res, { id: targetId }, '管理员已删除');
+    } catch (err) { next(err); }
+  }
+
+  // 查询活跃 JTI 会话
+  async getAdminSessions(req, res, next) {
+    try {
+      const sessions = [];
+      if (redisClient.isReady) {
+        const keys = await redisClient.scanKeys('auth:session:*');
+        for (const key of keys) {
+          // scanKeys 已带 'pf:' 前缀，但 get/ttl 会再加 'pf:' 前缀 → 去掉前缀避免重复
+          const bareKey = key.startsWith('pf:') ? key.slice(3) : key;
+          const parts = bareKey.split(':');
+          if (parts.length >= 4 && parts[0] === 'auth' && parts[1] === 'session') {
+            const adminId = parts[2];
+            const jti = parts.slice(3).join(':');
+            const ip = await redisClient.get(bareKey);
+            const ttl = await redisClient.ttl(bareKey);
+            sessions.push({ adminId: parseInt(adminId), jti, loginIp: ip || '--', ttlSeconds: ttl });
+          }
+        }
+      }
+
+      if (sessions.length > 0) {
+        const adminIds = [...new Set(sessions.map(s => s.adminId))];
+        const admins = await db.all(
+          `SELECT id, username FROM sys_admins WHERE id IN (${adminIds.map(() => '?').join(',')})`,
+          adminIds
+        );
+        const adminMap = {};
+        admins.forEach(a => { adminMap[a.id] = a.username; });
+        sessions.forEach(s => { s.username = adminMap[s.adminId] || `ID:${s.adminId}`; });
+      }
+
+      return success(res, { sessions, total: sessions.length }, '活跃会话查询成功');
+    } catch (err) { next(err); }
+  }
+
 }
 
-
-
-
-module.exports = new AdminController();             
+module.exports = new AdminController();

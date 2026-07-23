@@ -28,10 +28,18 @@ class RedisWrapper {
 
   _bindEvents() {
     this.client.on('connect', () => console.log('⏳ [Redis] 正在连接...'));
-    this.client.on('ready', () => {
+    this.client.on('ready', async () => {
       this.isReady = true;
       this._memDelSet.clear(); // Redis 恢复后清空内存删除标记，避免永久绕过缓存
       this._clearReconnectTimer();
+      // 🆕 重启时重置设备注销计数器（避免跨启动周期累积）
+      try {
+        const keys = await this.client.keys(`${this.prefix}risk:cancel_count:device:*`);
+        if (keys.length > 0) {
+          await this.client.del(keys);
+          console.log(`🔄 [Redis] 已重置 ${keys.length} 个设备注销计数器`);
+        }
+      } catch (e) { /* 非关键，静默失败 */ }
       console.log('✅ [Redis] 连接成功，缓存服务已就绪');
     });
     this.client.on('error', (err) => {
