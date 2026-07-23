@@ -266,11 +266,12 @@ async function case05_redisPersistence() {
 async function case06_phoneEncryptedStorage() {
   const phone = genPhone('601');
   const db = await getConn();
+  const deviceId = `device-enc-test-${RUN_ID}`; // 每次运行使用唯一设备ID，避免黑名单残留
 
   // 通过 API 注册（处理频控，最多重试 3 次）
   let regResp;
   for (let attempt = 0; attempt < 3; attempt++) {
-    regResp = await api.post('/user/register', { phone, name: '密文测试', deviceId: 'device-enc-test' });
+    regResp = await api.post('/user/register', { phone, name: '密文测试', deviceId });
     if (regResp.data.code === 20000) break;
     if (regResp.data.code === 40101) { await sleep(61000); continue; } // 等频控过期
     break;
@@ -308,11 +309,12 @@ async function case06_phoneEncryptedStorage() {
 async function case07_phonePlaintextReturn() {
   const phone = genPhone('701');
   const db = await getConn();
+  const deviceId = `device-plain-test-${RUN_ID}`; // 每次运行使用唯一设备ID，避免黑名单残留
 
   // 通过 API 注册（处理频控）
   let regResp;
   for (let attempt = 0; attempt < 3; attempt++) {
-    regResp = await api.post('/user/register', { phone, name: '明文返回测试', deviceId: 'device-plain-test' });
+    regResp = await api.post('/user/register', { phone, name: '明文返回测试', deviceId });
     if (regResp.data.code === 20000) break;
     if (regResp.data.code === 40101) { await sleep(61000); continue; }
     break;
