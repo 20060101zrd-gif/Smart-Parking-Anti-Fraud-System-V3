@@ -28,3 +28,10 @@ Thumbs.db
 # 编辑器缓存
 .vscode/
 .idea/
+
+# CodeBuddy
+.codebuddy/
+
+# 说明文件（本地保留，不提交）
+explanation.md
+explanation.txt
