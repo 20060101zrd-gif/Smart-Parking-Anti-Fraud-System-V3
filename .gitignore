@@ -31,7 +31,9 @@ Thumbs.db
 
 # CodeBuddy
 .codebuddy/
+.workbuddy/
 
 # 说明文件（本地保留，不提交）
 explanation.md
 explanation.txt
+explanation.pdf
